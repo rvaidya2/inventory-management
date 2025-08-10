@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Chemical Request Sheet</title>
+  <link rel="stylesheet" href="/styles.css">
+
+  <script>
+    function addRow() {
+      const table = document.getElementById("chemicals-table");
+      const row = table.insertRow(-1);
+
+      const chemCell = row.insertCell(0);
+      chemCell.innerHTML = `
+        <select name="chemical[]" required>
+          <option value="990-GLUEBOARDS-72MB">990-GLUEBOARDS-72MB</option>
+          <option value="CONTRACT BLOX">CONTRACT BLOX</option>
+          <option value="INVICT INSECT PASTE">INVICT INSECT PASTE</option>
+          <option value="PRE CORE IGR CONCENTRATE">PRE CORE IGR CONCENTRATE</option>
+        </select>`;
+
+      const qtyCell = row.insertCell(1);
+      qtyCell.innerHTML = `<input type="number" name="quantity[]" min="1" required>`;
+
+      const unitCell = row.insertCell(2);
+      unitCell.innerHTML = `
+        <select name="unit[]" required>
+          <option value="case">Case</option>
+          <option value="box">Box</option>
+          <option value="individual">Individual</option>
+        </select>`;
+    }
+  </script>
+</head>
+<body>
+  <h2>Chemical Request Sheet</h2>
+
+  <form action="/submit-request" method="POST">
+    <table id="chemicals-table" border="1">
+      <tr>
+        <th>Chemical</th>
+        <th>Quantity</th>
+        <th>Unit</th>
+      </tr>
+      <tr>
+        <td>
+          <select name="chemical[]" required>
+            <option value="990-GLUEBOARDS-72MB">990-GLUEBOARDS-72MB</option>
+          <option value="CONTRACT BLOX">CONTRACT BLOX</option>
+          <option value="INVICT INSECT PASTE">INVICT INSECT PASTE</option>
+          <option value="PRE CORE IGR CONCENTRATE">PRE CORE IGR CONCENTRATE</option>
+          </select>
+        </td>
+        <td><input type="number" name="quantity[]" min="1" required></td>
+        <td>
+          <select name="unit[]" required>
+            <option value="case">Case</option>
+            <option value="box">Box</option>
+            <option value="individual">Individual</option>
+          </select>
+        </td>
+      </tr>
+    </table>
+    <br>
+    <button type="button" onclick="addRow()">Add Another Row</button>
+    <br><br>
+    <button type="submit">Submit Request</button>
+  </form>
+</body>
+</html>

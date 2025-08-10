@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Technician Request Form</title>
+  <link rel="stylesheet" href="/styles.css">
+
+</head>
+<body>
+  <h2>Technician Request</h2>
+  <form action="/form2" method="POST">
+    <label>Name:</label>
+    <input type="text" name="name" required><br><br>
+
+    <label>Branch:</label>
+    <select name="branch" required>
+      <option value="">-- Select Branch --</option>
+      <option value="Select">SELECT</option>
+      <option value="Yankee">YANKEE</option>
+      <option value="Metro">METRO</option>
+    </select><br><br>
+
+    <label>Supervisor:</label>
+    <select name="supervisor" required>
+      <option value="">-- Select Supervisor --</option>
+      <option value="Rob">ROB</option>
+      <option value="Liz">LIZ</option>
+    </select><br><br>
+
+    <label>Pickup Location:</label>
+    <select name="pickup_location" required>
+      <option value="">-- Select Location --</option>
+      <option value="Warehouse 1">Warehouse 1</option>
+      <option value="Warehouse 2">Warehouse 2</option>
+    </select><br><br>
+
+    <label>Pickup Date:</label>
+    <input type="date" name="pickup_date" required><br><br>
+
+    <button type="submit">Next</button>
+  </form>
+</body>
+</html>
