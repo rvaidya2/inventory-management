@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
-// View pending technician requests for a specific supervisor
+// View all pending technician requests for a specific supervisor
 router.get('/:supervisorName', (req, res) => {
   const supervisorName = req.params.supervisorName;
 
@@ -50,12 +50,8 @@ router.get('/:supervisorName', (req, res) => {
       });
     });
 
-    let html = `<html><head><link rel="stylesheet" href="/styles.css"><title>${supervisorName} - Supervisor Approvals</title></head><body>`;
-    html += `<h2>Pending Technician Requests for Supervisor: ${supervisorName}</h2>`;
-
-    if (Object.keys(grouped).length === 0) {
-      html += `<p>No pending requests for you.</p>`;
-    }
+    let html = `<html><head><link rel="stylesheet" href="/styles.css"><title>Supervisor Approvals</title></head><body>`;
+    html += `<h2>Pending Technician Requests for ${supervisorName}</h2>`;
 
     Object.values(grouped).forEach(req => {
       const allReviewed = req.chemicals.every(c => c.status !== 'pending');
@@ -77,17 +73,15 @@ router.get('/:supervisorName', (req, res) => {
             <td>${chem.chemical}</td>
             <td>${chem.quantity}</td>
             <td>${chem.unit}</td>
-            <td id="status-${chem.chem_id}">${chem.status}</td>
+            <td>${chem.status}</td>
             <td>
               ${chem.status === 'pending' ? `
-                <form method="POST" action="/supervisor/chem-approve" style="display:inline;" onsubmit="setTimeout(() => location.reload(), 100);">
+                <form method="POST" action="/supervisor/chem-approve" style="display:inline;">
                   <input type="hidden" name="id" value="${chem.chem_id}">
-                  <input type="hidden" name="supervisorName" value="${supervisorName}">
                   <button type="submit">Approve</button>
                 </form>
-                <form method="POST" action="/supervisor/chem-reject" style="display:inline;" onsubmit="setTimeout(() => location.reload(), 100);">
+                <form method="POST" action="/supervisor/chem-reject" style="display:inline;">
                   <input type="hidden" name="id" value="${chem.chem_id}">
-                  <input type="hidden" name="supervisorName" value="${supervisorName}">
                   <button type="submit">Reject</button>
                 </form>
               ` : chem.status.charAt(0).toUpperCase() + chem.status.slice(1)}
@@ -95,11 +89,12 @@ router.get('/:supervisorName', (req, res) => {
           </tr>`;
       });
 
-      html += `</table><br>
-        <form method="POST" action="/supervisor/final-approve" onsubmit="setTimeout(() => location.reload(), 100);">
+      html += `</table><br>`;
+
+      html += `
+        <form method="POST" action="/supervisor/final-approve">
           <input type="hidden" name="id" value="${req.request_id}">
-          <input type="hidden" name="supervisorName" value="${supervisorName}">
-          <button type="submit" ${!allReviewed ? 'disabled title="Review all chemicals first"' : ''}>Finalize Form Approval</button>
+          <button type="submit" ${!allReviewed ? 'disabled title="Review all chemicals before finalizing"' : ''}>Finalize Form Approval</button>
         </form>
       </div>`;
     });
@@ -111,35 +106,36 @@ router.get('/:supervisorName', (req, res) => {
 
 // Approve chemical
 router.post('/chem-approve', (req, res) => {
-  const { id, supervisorName } = req.body;
-  db.run(`UPDATE chemical_requests SET status = 'approved' WHERE id = ?`, [id], err => {
+  db.run(`UPDATE chemical_requests SET status = 'approved' WHERE id = ?`, [req.body.id], err => {
     if (err) return res.send('Error approving chemical.');
-    res.redirect(`/supervisor/${supervisorName}`);
+    res.redirect('back');
   });
 });
 
 // Reject chemical
 router.post('/chem-reject', (req, res) => {
-  const { id, supervisorName } = req.body;
-  db.run(`UPDATE chemical_requests SET status = 'rejected' WHERE id = ?`, [id], err => {
+  db.run(`UPDATE chemical_requests SET status = 'rejected' WHERE id = ?`, [req.body.id], err => {
     if (err) return res.send('Error rejecting chemical.');
-    res.redirect(`/supervisor/${supervisorName}`);
+    res.redirect('back');
   });
 });
 
 // Finalize form approval
 router.post('/final-approve', (req, res) => {
-  const { id, supervisorName } = req.body;
+  const requestId = req.body.id;
+
   db.get(`
-    SELECT COUNT(*) AS pending_count FROM chemical_requests 
+    SELECT COUNT(*) AS pending_count
+    FROM chemical_requests 
     WHERE request_id = ? AND status = 'pending'
-  `, [id], (err, result) => {
+  `, [requestId], (err, result) => {
     if (err) return res.send('Error checking chemical status.');
 
     if (result.pending_count === 0) {
-      db.run(`UPDATE technician_requests SET status = 'approved' WHERE id = ?`, [id], err => {
+      // Approve request even if some chemicals are rejected
+      db.run(`UPDATE technician_requests SET status = 'approved' WHERE id = ?`, [requestId], err => {
         if (err) return res.send('Error approving form.');
-        res.redirect(`/supervisor/${supervisorName}`);
+        res.redirect('back');
       });
     } else {
       res.send('You must review all chemicals before finalizing.');
