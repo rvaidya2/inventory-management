@@ -15,6 +15,7 @@ router.get('/:location', (req, res) => {
       tr.pickup_location,
       tr.pickup_date,
       tr.status,
+      cr.id AS chem_id,
       cr.chemical,
       cr.quantity,
       cr.unit,
@@ -39,11 +40,12 @@ router.get('/:location', (req, res) => {
         delete grouped[row.request_id].quantity;
         delete grouped[row.request_id].unit;
         delete grouped[row.request_id].chem_status;
+        delete grouped[row.request_id].chem_id;
       }
 
-      // Only push approved chemicals
       if (row.chem_status === 'approved') {
         grouped[row.request_id].chemicals.push({
+          chem_id: row.chem_id,
           chemical: row.chemical,
           quantity: row.quantity,
           unit: row.unit
@@ -62,7 +64,6 @@ router.get('/:location', (req, res) => {
     `;
 
     Object.values(grouped).forEach(req => {
-      // Show request only if it has at least one approved chemical
       if (req.chemicals.length > 0) {
         html += `
           <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem;">
@@ -73,7 +74,7 @@ router.get('/:location', (req, res) => {
             <br><br>
             <table border="1" style="width:100%;">
               <tr>
-                <th>Chemical</th><th>Quantity</th><th>Unit</th>
+                <th>Chemical</th><th>Quantity</th><th>Unit</th><th>Action</th>
               </tr>
         `;
 
@@ -83,6 +84,12 @@ router.get('/:location', (req, res) => {
               <td>${chem.chemical}</td>
               <td>${chem.quantity}</td>
               <td>${chem.unit}</td>
+              <td>
+                <form method="POST" action="/vendor/fulfill/${encodeURIComponent(location)}" style="display:inline;">
+                  <input type="hidden" name="id" value="${chem.chem_id}">
+                  <button type="submit">Fulfill</button>
+                </form>
+              </td>
             </tr>
           `;
         });
@@ -93,6 +100,15 @@ router.get('/:location', (req, res) => {
 
     html += '</body></html>';
     res.send(html);
+  });
+});
+
+// Fulfill chemical request
+router.post('/fulfill/:location', (req, res) => {
+  const location = decodeURIComponent(req.params.location);
+  db.run(`UPDATE chemical_requests SET status = 'fulfilled' WHERE id = ?`, [req.body.id], err => {
+    if (err) return res.send('Error fulfilling chemical.');
+    res.redirect(`/vendor/${encodeURIComponent(location)}`);
   });
 });
 
