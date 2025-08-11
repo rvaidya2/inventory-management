@@ -91,10 +91,13 @@ router.get('/:supervisorName', (req, res) => {
 
       html += `</table><br>`;
 
+      // Enable finalize if all items reviewed (approved/rejected)
       html += `
         <form method="POST" action="/supervisor/final-approve">
           <input type="hidden" name="id" value="${req.request_id}">
-          <button type="submit" ${!allReviewed ? 'disabled title="Review all chemicals before finalizing"' : ''}>Finalize Form Approval</button>
+          <button type="submit" ${!allReviewed ? 'disabled title="Review all chemicals before finalizing"' : ''}>
+            Finalize Form Approval
+          </button>
         </form>
       </div>`;
     });
