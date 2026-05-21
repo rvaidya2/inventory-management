@@ -2,12 +2,48 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
-// View all pending technician requests for a specific supervisor
-router.get('/:supervisorName', (req, res) => {
+function requireSupervisorAuth(req, res, next) {
+  if (req.session && req.session.supervisorAuthed) return next();
+  req.session.returnTo = req.originalUrl;
+  res.redirect('/supervisor/login');
+}
+
+function loginPage(error = false) {
+  return `
+    <html>
+    <head><title>Supervisor Login</title><link rel="stylesheet" href="/styles.css"></head>
+    <body>
+      <h2>Supervisor Login</h2>
+      <form action="/supervisor/login" method="POST">
+        <label>Password:</label>
+        <input type="password" name="password" required><br><br>
+        <button type="submit">Login</button>
+      </form>
+      ${error ? '<p style="color:red;">Incorrect password. Please try again.</p>' : ''}
+    </body>
+    </html>`;
+}
+
+router.get('/login', (req, res) => {
+  res.send(loginPage());
+});
+
+router.post('/login', (req, res) => {
+  if (req.body.password === process.env.SUPERVISOR_PASSWORD) {
+    req.session.supervisorAuthed = true;
+    const returnTo = req.session.returnTo || '/supervisor';
+    delete req.session.returnTo;
+    res.redirect(returnTo);
+  } else {
+    res.status(401).send(loginPage(true));
+  }
+});
+
+router.get('/:supervisorName', requireSupervisorAuth, (req, res) => {
   const supervisorName = req.params.supervisorName;
 
   db.all(`
-    SELECT 
+    SELECT
       tr.id AS request_id,
       tr.name,
       tr.branch,
@@ -106,29 +142,26 @@ router.get('/:supervisorName', (req, res) => {
   });
 });
 
-// Approve chemical
-router.post('/chem-approve/:supervisorName', (req, res) => {
+router.post('/chem-approve/:supervisorName', requireSupervisorAuth, (req, res) => {
   db.run(`UPDATE chemical_requests SET status = 'approved' WHERE id = ?`, [req.body.id], err => {
     if (err) return res.send('Error approving chemical.');
     res.redirect(`/supervisor/${req.params.supervisorName}`);
   });
 });
 
-// Reject chemical
-router.post('/chem-reject/:supervisorName', (req, res) => {
+router.post('/chem-reject/:supervisorName', requireSupervisorAuth, (req, res) => {
   db.run(`UPDATE chemical_requests SET status = 'rejected' WHERE id = ?`, [req.body.id], err => {
     if (err) return res.send('Error rejecting chemical.');
     res.redirect(`/supervisor/${req.params.supervisorName}`);
   });
 });
 
-// Finalize form approval
-router.post('/final-approve/:supervisorName', (req, res) => {
+router.post('/final-approve/:supervisorName', requireSupervisorAuth, (req, res) => {
   const requestId = req.body.id;
 
   db.get(`
     SELECT COUNT(*) AS pending_count
-    FROM chemical_requests 
+    FROM chemical_requests
     WHERE request_id = ? AND status = 'pending'
   `, [requestId], (err, result) => {
     if (err) return res.send('Error checking chemical status.');
