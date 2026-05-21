@@ -3,32 +3,44 @@
 <head>
   <title>Chemical Request Sheet</title>
   <link rel="stylesheet" href="/styles.css">
-
   <script>
+    let chemicalsData = [];
+
+    function buildChemSelect() {
+      return '<select name="chemical[]" required>' +
+        chemicalsData.map(c => `<option value="${c.product_name}">${c.product_name}</option>`).join('') +
+        '</select>';
+    }
+
     function addRow() {
-      const table = document.getElementById("chemicals-table");
+      const table = document.getElementById('chemicals-table');
       const row = table.insertRow(-1);
 
-      const chemCell = row.insertCell(0);
-      chemCell.innerHTML = `
-        <select name="chemical[]" required>
-          <option value="990-GLUEBOARDS-72MB">990-GLUEBOARDS-72MB</option>
-          <option value="CONTRACT BLOX">CONTRACT BLOX</option>
-          <option value="INVICT INSECT PASTE">INVICT INSECT PASTE</option>
-          <option value="PRE CORE IGR CONCENTRATE">PRE CORE IGR CONCENTRATE</option>
-        </select>`;
-
-      const qtyCell = row.insertCell(1);
-      qtyCell.innerHTML = `<input type="number" name="quantity[]" min="1" required>`;
-
-      const unitCell = row.insertCell(2);
-      unitCell.innerHTML = `
+      row.insertCell(0).innerHTML = buildChemSelect();
+      row.insertCell(1).innerHTML = '<input type="number" name="quantity[]" min="1" required>';
+      row.insertCell(2).innerHTML = `
         <select name="unit[]" required>
           <option value="case">Case</option>
           <option value="box">Box</option>
           <option value="individual">Individual</option>
         </select>`;
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/chemicals')
+        .then(r => r.json())
+        .then(data => {
+          chemicalsData = data;
+          const firstSelect = document.getElementById('first-chemical-select');
+          firstSelect.innerHTML = data
+            .map(c => `<option value="${c.product_name}">${c.product_name}</option>`)
+            .join('');
+        })
+        .catch(() => {
+          document.getElementById('first-chemical-select').innerHTML =
+            '<option value="">Error loading chemicals</option>';
+        });
+    });
   </script>
 </head>
 <body>
@@ -43,11 +55,8 @@
       </tr>
       <tr>
         <td>
-          <select name="chemical[]" required>
-            <option value="990-GLUEBOARDS-72MB">990-GLUEBOARDS-72MB</option>
-          <option value="CONTRACT BLOX">CONTRACT BLOX</option>
-          <option value="INVICT INSECT PASTE">INVICT INSECT PASTE</option>
-          <option value="PRE CORE IGR CONCENTRATE">PRE CORE IGR CONCENTRATE</option>
+          <select id="first-chemical-select" name="chemical[]" required>
+            <option value="">Loading chemicals...</option>
           </select>
         </td>
         <td><input type="number" name="quantity[]" min="1" required></td>
