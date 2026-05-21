@@ -92,15 +92,27 @@ const chemicals = [
 // CONTACTS — edit this array to add/remove contacts (supervisors, managers, etc.)
 // Each entry: last_name, first_name, phone, email, branch, role
 const contacts = [
-  {
-    last_name: 'Smith',
-    first_name: 'John',
-    phone: '555-1234',
-    email: 'jsmith@example.com',
-    branch: 'Miami',
-    role: 'Branch Manager'
-  },
-  // Copy the block above and paste a new one for each additional contact
+  { last_name: 'Chase', first_name: 'Alex', phone: '(401) 349-9030', email: 'achase@suburbanpestcontrollc.com', branch: 'Amherst & Suburban', role: 'Branch Manager' },
+  { last_name: 'Kamara', first_name: 'Michael', phone: '(917) 648-8280', email: 'mkamara@havenopests.com', branch: 'Colony, Metro Pest & Select', role: 'Service Manager' },
+  { last_name: 'Murphy', first_name: 'Kieon', phone: '(516) 909-1224', email: 'kmurphy@akaselect.com', branch: 'Colony, Metro Pest & Select', role: 'Service Manager' },
+  { last_name: "O'Reilly", first_name: 'Thomas', phone: '(347) 612-5748', email: 'toreilly@havenopests.com', branch: 'Colony, Metro Pest & Select', role: 'Area Manager' },
+  { last_name: 'Petho', first_name: 'Justin', phone: '(201) 410-2160', email: 'jpetho@akaselect.com', branch: 'Colony, Metro Pest & Select', role: 'Service Manager' },
+  { last_name: 'Savastino', first_name: 'Jennifer', phone: '(315) 447-6723', email: 'jennifer@gannonpestcontrol.com', branch: 'Gannon', role: 'Branch Manager' },
+  { last_name: 'Cambareri', first_name: 'Rocco', phone: '(203) 938-3595', email: 'rocco@insectax.com', branch: 'Insecta X', role: 'Branch Manager' },
+  { last_name: 'Martin', first_name: 'Glen', phone: '(401) 349-9824', email: 'glenn@lincolnpestcontrol.com', branch: 'Lincoln', role: 'Service Manager' },
+  { last_name: 'Chase', first_name: 'Melissa', phone: '(401) 578-3111', email: 'melissa@lincolnpestcontrol.com', branch: 'Lincoln & Pestex', role: 'Branch Manager' },
+  { last_name: 'Jones', first_name: 'Peter', phone: '(718) 717-4901', email: 'pjones@havenopests.com', branch: 'Metro Pest', role: 'Area Manager' },
+  { last_name: 'LaRue', first_name: 'Matt', phone: '(908) 821-7811', email: 'matt@onthespotpestcontrol.com', branch: 'On The Spot', role: 'Service Manager' },
+  { last_name: 'Netland', first_name: 'Michael', phone: '(862) 774-1789', email: 'mnetland@akaselect.com', branch: 'On The Spot', role: 'Branch Manager' },
+  { last_name: 'Costa', first_name: 'Shawn', phone: '(508) 838-3722', email: 'shawn@pestexinc.com', branch: 'Pestex', role: 'Branch Manager' },
+  { last_name: 'Greeley', first_name: 'Bill', phone: '(617) 590-9151', email: 'bill@pestexinc.com', branch: 'Pestex', role: 'Service Manager' },
+  { last_name: 'Badillo', first_name: 'Lizette', phone: '(347) 476-5280', email: 'lbadillo@akaselect.com', branch: 'Select', role: 'Region Director' },
+  { last_name: 'Canales', first_name: 'Pavel', phone: '(631) 487-7293', email: 'pcanales@akaselect.com', branch: 'Select', role: 'Service Manager' },
+  { last_name: 'Hernandez', first_name: 'Danny', phone: '(516) 988-3864', email: 'dhernandez@akaselect.com', branch: 'Select', role: 'Branch Manager' },
+  { last_name: 'Alarco', first_name: 'Robert', phone: '(516) 578-7689', email: 'ralarco@akaselect.com', branch: 'Select - LI Commercial & Residential', role: 'Branch Manager' },
+  { last_name: 'Roach', first_name: 'Thomas', phone: '(631) 747-7791', email: 'troach@akaselect.com', branch: 'Select - LI Commercial & Residential', role: 'Service Manager' },
+  { last_name: 'Barna', first_name: 'Jeff', phone: '(516) 912-3966', email: 'jbarna@akaselect.com', branch: 'Vermin Control', role: 'Regional Manager' },
+  { last_name: 'Swaney', first_name: 'Mary', phone: '', email: 'mswaney@vermincontrol.com', branch: 'Vermin Control', role: 'Office Manager' },
 ];
 
 // LOCATIONS — add here when location sheet is received
