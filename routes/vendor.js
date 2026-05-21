@@ -2,47 +2,42 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
-// Vendor view by pickup location
-router.get('/:location', (req, res) => {
+router.get('/:location', async (req, res) => {
   const location = decodeURIComponent(req.params.location);
 
-  db.all(`
-    SELECT 
-      tr.id AS request_id,
-      tr.name,
-      tr.branch,
-      tr.supervisor,
-      tr.pickup_location,
-      tr.pickup_date,
-      tr.status,
-      cr.id AS chem_id,
-      cr.chemical,
-      cr.quantity,
-      cr.unit,
-      cr.status AS chem_status
-    FROM technician_requests tr
-    LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
-    WHERE tr.status = 'approved'
-      AND tr.pickup_location = ?
-      AND cr.status = 'approved'
-    ORDER BY tr.pickup_date ASC
-  `, [location], (err, rows) => {
-    if (err) return res.send('Error retrieving vendor data.');
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        tr.id AS request_id,
+        tr.name,
+        tr.branch,
+        tr.supervisor,
+        tr.pickup_location,
+        tr.pickup_date,
+        tr.status,
+        cr.id AS chem_id,
+        cr.chemical,
+        cr.quantity,
+        cr.unit,
+        cr.status AS chem_status
+      FROM technician_requests tr
+      LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
+      WHERE tr.status = 'approved'
+        AND tr.pickup_location = $1
+        AND cr.status = 'approved'
+      ORDER BY tr.pickup_date ASC
+    `, [location]);
 
-    let grouped = {};
+    const grouped = {};
     rows.forEach(row => {
       if (!grouped[row.request_id]) {
-        grouped[row.request_id] = {
-          ...row,
-          chemicals: []
-        };
+        grouped[row.request_id] = { ...row, chemicals: [] };
         delete grouped[row.request_id].chemical;
         delete grouped[row.request_id].quantity;
         delete grouped[row.request_id].unit;
         delete grouped[row.request_id].chem_status;
         delete grouped[row.request_id].chem_id;
       }
-
       if (row.chem_status === 'approved') {
         grouped[row.request_id].chemicals.push({
           chem_id: row.chem_id,
@@ -73,10 +68,7 @@ router.get('/:location', (req, res) => {
             <strong>Date:</strong> ${req.pickup_date}
             <br><br>
             <table border="1" style="width:100%;">
-              <tr>
-                <th>Chemical</th><th>Quantity</th><th>Unit</th><th>Action</th>
-              </tr>
-        `;
+              <tr><th>Chemical</th><th>Quantity</th><th>Unit</th><th>Action</th></tr>`;
 
         req.chemicals.forEach(chem => {
           html += `
@@ -90,8 +82,7 @@ router.get('/:location', (req, res) => {
                   <button type="submit">Fulfill</button>
                 </form>
               </td>
-            </tr>
-          `;
+            </tr>`;
         });
 
         html += `</table></div>`;
@@ -100,16 +91,19 @@ router.get('/:location', (req, res) => {
 
     html += '</body></html>';
     res.send(html);
-  });
+  } catch (err) {
+    res.send('Error retrieving vendor data.');
+  }
 });
 
-// Fulfill chemical request
-router.post('/fulfill/:location', (req, res) => {
+router.post('/fulfill/:location', async (req, res) => {
   const location = decodeURIComponent(req.params.location);
-  db.run(`UPDATE chemical_requests SET status = 'fulfilled' WHERE id = ?`, [req.body.id], err => {
-    if (err) return res.send('Error fulfilling chemical.');
+  try {
+    await db.query(`UPDATE chemical_requests SET status = 'fulfilled' WHERE id = $1`, [req.body.id]);
     res.redirect(`/vendor/${encodeURIComponent(location)}`);
-  });
+  } catch (err) {
+    res.send('Error fulfilling chemical.');
+  }
 });
 
 module.exports = router;

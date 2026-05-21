@@ -6,7 +6,8 @@
       "Bash(npm install *)",
       "PowerShell(npm install *)",
       "PowerShell($env:PATH)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   }
 }

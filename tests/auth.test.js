@@ -1,4 +1,3 @@
-process.env.DB_PATH = ':memory:';
 process.env.NODE_ENV = 'test';
 process.env.SUPERVISOR_PASSWORD = 'testpassword';
 process.env.SESSION_SECRET = 'test-secret';
@@ -7,15 +6,15 @@ const request = require('supertest');
 
 let app, db;
 
-beforeAll(done => {
+beforeAll(async () => {
   jest.resetModules();
   db = require('../db');
   app = require('../index');
-  db.serialize(done);
+  await new Promise(resolve => setTimeout(resolve, 500));
 });
 
-afterAll(done => {
-  db.close(done);
+afterAll(async () => {
+  await db.end();
 });
 
 describe('Supervisor auth', () => {

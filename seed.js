@@ -1,4 +1,4 @@
-const db = require.main === module ? require('./db') : null;
+const db = require('./db');
 
 // CHEMICALS — edit this array to add/remove chemicals
 // Each entry: material_code, product_name, epa_registration, replacement_product
@@ -120,34 +120,26 @@ const contacts = [
 //   { name: 'Warehouse 1', address: '...' },
 // ];
 
-function seed(db) {
-  db.serialize(() => {
-    const chemStmt = db.prepare(
-      `INSERT OR IGNORE INTO chemicals (material_code, product_name, epa_registration, replacement_product)
-       VALUES (?, ?, ?, ?)`
+async function seed(pool) {
+  for (const c of chemicals) {
+    await pool.query(
+      `INSERT INTO chemicals (material_code, product_name, epa_registration, replacement_product)
+       VALUES ($1, $2, $3, $4) ON CONFLICT (material_code) DO NOTHING`,
+      [c.material_code, c.product_name, c.epa_registration, c.replacement_product]
     );
-    chemicals.forEach(c => {
-      chemStmt.run(c.material_code, c.product_name, c.epa_registration, c.replacement_product);
-    });
-    chemStmt.finalize();
-
-    const contactStmt = db.prepare(
-      `INSERT OR IGNORE INTO contacts (last_name, first_name, phone, email, branch, role)
-       VALUES (?, ?, ?, ?, ?, ?)`
+  }
+  for (const c of contacts) {
+    await pool.query(
+      `INSERT INTO contacts (last_name, first_name, phone, email, branch, role)
+       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING`,
+      [c.last_name, c.first_name, c.phone, c.email, c.branch, c.role]
     );
-    contacts.forEach(c => {
-      contactStmt.run(c.last_name, c.first_name, c.phone, c.email, c.branch, c.role);
-    });
-    contactStmt.finalize(() => {
-      console.log(`Seeded ${chemicals.length} chemicals and ${contacts.length} contacts.`);
-    });
-  });
+  }
+  console.log(`Seeded ${chemicals.length} chemicals and ${contacts.length} contacts.`);
 }
 
-// Run directly via `node seed.js`
 if (require.main === module) {
-  seed(db);
-  setTimeout(() => db.close(), 1000);
+  seed(db).then(() => process.exit(0)).catch(err => { console.error(err); process.exit(1); });
 } else {
   module.exports = seed;
 }

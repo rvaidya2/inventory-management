@@ -10,7 +10,7 @@ const supervisorRoutes = require('./routes/supervisor');
 const vendorRoutes = require('./routes/vendor');
 const apiRoutes = require('./routes/api');
 
-seed(db);
+seed(db).catch(err => console.error('Seed error:', err));
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));

@@ -39,44 +39,40 @@ router.post('/login', (req, res) => {
   }
 });
 
-router.get('/:supervisorName', requireSupervisorAuth, (req, res) => {
+router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
   const supervisorName = req.params.supervisorName;
 
-  db.all(`
-    SELECT
-      tr.id AS request_id,
-      tr.name,
-      tr.branch,
-      tr.supervisor,
-      tr.pickup_location,
-      tr.pickup_date,
-      tr.status AS request_status,
-      cr.id AS chem_id,
-      cr.chemical,
-      cr.quantity,
-      cr.unit,
-      cr.status AS chem_status
-    FROM technician_requests tr
-    LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
-    WHERE tr.status = 'pending' AND tr.supervisor = ?
-    ORDER BY tr.id DESC
-  `, [supervisorName], (err, rows) => {
-    if (err) return res.send('Error fetching supervisor data.');
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        tr.id AS request_id,
+        tr.name,
+        tr.branch,
+        tr.supervisor,
+        tr.pickup_location,
+        tr.pickup_date,
+        tr.status AS request_status,
+        cr.id AS chem_id,
+        cr.chemical,
+        cr.quantity,
+        cr.unit,
+        cr.status AS chem_status
+      FROM technician_requests tr
+      LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
+      WHERE tr.status = 'pending' AND tr.supervisor = $1
+      ORDER BY tr.id DESC
+    `, [supervisorName]);
 
     const grouped = {};
     rows.forEach(row => {
       if (!grouped[row.request_id]) {
-        grouped[row.request_id] = {
-          ...row,
-          chemicals: []
-        };
+        grouped[row.request_id] = { ...row, chemicals: [] };
         delete grouped[row.request_id].chemical;
         delete grouped[row.request_id].quantity;
         delete grouped[row.request_id].unit;
         delete grouped[row.request_id].chem_id;
         delete grouped[row.request_id].chem_status;
       }
-
       grouped[row.request_id].chemicals.push({
         chem_id: row.chem_id,
         chemical: row.chemical,
@@ -99,9 +95,7 @@ router.get('/:supervisorName', requireSupervisorAuth, (req, res) => {
           <strong>Pickup Date:</strong> ${req.pickup_date}
           <br><br>
           <table border="1" style="width:100%;">
-            <tr>
-              <th>Chemical</th><th>Quantity</th><th>Unit</th><th>Status</th><th>Action</th>
-            </tr>`;
+            <tr><th>Chemical</th><th>Quantity</th><th>Unit</th><th>Status</th><th>Action</th></tr>`;
 
       req.chemicals.forEach(chem => {
         html += `
@@ -125,9 +119,7 @@ router.get('/:supervisorName', requireSupervisorAuth, (req, res) => {
           </tr>`;
       });
 
-      html += `</table><br>`;
-
-      html += `
+      html += `</table><br>
         <form method="POST" action="/supervisor/final-approve/${supervisorName}">
           <input type="hidden" name="id" value="${req.request_id}">
           <button type="submit" ${!allReviewed ? 'disabled title="Review all chemicals before finalizing"' : ''}>
@@ -137,44 +129,48 @@ router.get('/:supervisorName', requireSupervisorAuth, (req, res) => {
       </div>`;
     });
 
-    html += `</body></html>`;
+    html += '</body></html>';
     res.send(html);
-  });
+  } catch (err) {
+    res.send('Error fetching supervisor data.');
+  }
 });
 
-router.post('/chem-approve/:supervisorName', requireSupervisorAuth, (req, res) => {
-  db.run(`UPDATE chemical_requests SET status = 'approved' WHERE id = ?`, [req.body.id], err => {
-    if (err) return res.send('Error approving chemical.');
+router.post('/chem-approve/:supervisorName', requireSupervisorAuth, async (req, res) => {
+  try {
+    await db.query(`UPDATE chemical_requests SET status = 'approved' WHERE id = $1`, [req.body.id]);
     res.redirect(`/supervisor/${req.params.supervisorName}`);
-  });
+  } catch (err) {
+    res.send('Error approving chemical.');
+  }
 });
 
-router.post('/chem-reject/:supervisorName', requireSupervisorAuth, (req, res) => {
-  db.run(`UPDATE chemical_requests SET status = 'rejected' WHERE id = ?`, [req.body.id], err => {
-    if (err) return res.send('Error rejecting chemical.');
+router.post('/chem-reject/:supervisorName', requireSupervisorAuth, async (req, res) => {
+  try {
+    await db.query(`UPDATE chemical_requests SET status = 'rejected' WHERE id = $1`, [req.body.id]);
     res.redirect(`/supervisor/${req.params.supervisorName}`);
-  });
+  } catch (err) {
+    res.send('Error rejecting chemical.');
+  }
 });
 
-router.post('/final-approve/:supervisorName', requireSupervisorAuth, (req, res) => {
+router.post('/final-approve/:supervisorName', requireSupervisorAuth, async (req, res) => {
   const requestId = req.body.id;
+  try {
+    const { rows } = await db.query(
+      `SELECT COUNT(*) AS pending_count FROM chemical_requests WHERE request_id = $1 AND status = 'pending'`,
+      [requestId]
+    );
 
-  db.get(`
-    SELECT COUNT(*) AS pending_count
-    FROM chemical_requests
-    WHERE request_id = ? AND status = 'pending'
-  `, [requestId], (err, result) => {
-    if (err) return res.send('Error checking chemical status.');
-
-    if (result.pending_count === 0) {
-      db.run(`UPDATE technician_requests SET status = 'approved' WHERE id = ?`, [requestId], err => {
-        if (err) return res.send('Error approving form.');
-        res.redirect(`/supervisor/${req.params.supervisorName}`);
-      });
+    if (parseInt(rows[0].pending_count) === 0) {
+      await db.query(`UPDATE technician_requests SET status = 'approved' WHERE id = $1`, [requestId]);
+      res.redirect(`/supervisor/${req.params.supervisorName}`);
     } else {
       res.send('You must review all chemicals before finalizing.');
     }
-  });
+  } catch (err) {
+    res.send('Error approving form.');
+  }
 });
 
 module.exports = router;
