@@ -3,7 +3,27 @@
 <head>
   <title>Technician Request Form</title>
   <link rel="stylesheet" href="/styles.css">
-
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      fetch('/api/contacts')
+        .then(r => r.json())
+        .then(contacts => {
+          const select = document.getElementById('supervisor-select');
+          select.innerHTML = '<option value="">-- Select Supervisor --</option>';
+          contacts.forEach(c => {
+            const fullName = c.first_name + ' ' + c.last_name;
+            const opt = document.createElement('option');
+            opt.value = fullName;
+            opt.textContent = fullName.toUpperCase();
+            select.appendChild(opt);
+          });
+        })
+        .catch(() => {
+          const select = document.getElementById('supervisor-select');
+          select.innerHTML = '<option value="">Error loading supervisors</option>';
+        });
+    });
+  </script>
 </head>
 <body>
   <h2>Technician Request</h2>
@@ -20,10 +40,8 @@
     </select><br><br>
 
     <label>Supervisor:</label>
-    <select name="supervisor" required>
-      <option value="">-- Select Supervisor --</option>
-      <option value="Rob">ROB</option>
-      <option value="Liz">LIZ</option>
+    <select id="supervisor-select" name="supervisor" required>
+      <option value="">-- Loading supervisors... --</option>
     </select><br><br>
 
     <label>Pickup Location:</label>
