@@ -1,24 +1,32 @@
+require('dotenv').config();
 const express = require('express');
-const path = require('path');
+const session = require('express-session');
 const app = express();
 
-// Load route modules
 const technicianRoutes = require('./routes/technician');
 const supervisorRoutes = require('./routes/supervisor');
 const vendorRoutes = require('./routes/vendor');
+const apiRoutes = require('./routes/api');
 
-// Middleware
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
-// Mount routes
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'dev-secret-change-me',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false }
+}));
+
+app.use('/api', apiRoutes);
 app.use('/', technicianRoutes);
 app.use('/supervisor', supervisorRoutes);
 app.use('/vendor', express.urlencoded({ extended: true }), vendorRoutes);
 
-// Start the server
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+if (require.main === module) {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+}
 
+module.exports = app;
