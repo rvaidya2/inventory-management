@@ -3,10 +3,14 @@ const express = require('express');
 const session = require('express-session');
 const app = express();
 
+const db = require('./db');
+const seed = require('./seed');
 const technicianRoutes = require('./routes/technician');
 const supervisorRoutes = require('./routes/supervisor');
 const vendorRoutes = require('./routes/vendor');
 const apiRoutes = require('./routes/api');
+
+seed(db);
 
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));

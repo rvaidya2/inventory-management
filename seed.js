@@ -1,4 +1,4 @@
-const db = require('./db');
+const db = require.main === module ? require('./db') : null;
 
 // CHEMICALS — edit this array to add/remove chemicals
 // Each entry: material_code, product_name, epa_registration, replacement_product
@@ -120,25 +120,34 @@ const contacts = [
 //   { name: 'Warehouse 1', address: '...' },
 // ];
 
-db.serialize(() => {
-  const chemStmt = db.prepare(
-    `INSERT OR IGNORE INTO chemicals (material_code, product_name, epa_registration, replacement_product)
-     VALUES (?, ?, ?, ?)`
-  );
-  chemicals.forEach(c => {
-    chemStmt.run(c.material_code, c.product_name, c.epa_registration, c.replacement_product);
-  });
-  chemStmt.finalize();
+function seed(db) {
+  db.serialize(() => {
+    const chemStmt = db.prepare(
+      `INSERT OR IGNORE INTO chemicals (material_code, product_name, epa_registration, replacement_product)
+       VALUES (?, ?, ?, ?)`
+    );
+    chemicals.forEach(c => {
+      chemStmt.run(c.material_code, c.product_name, c.epa_registration, c.replacement_product);
+    });
+    chemStmt.finalize();
 
-  const contactStmt = db.prepare(
-    `INSERT OR IGNORE INTO contacts (last_name, first_name, phone, email, branch, role)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  );
-  contacts.forEach(c => {
-    contactStmt.run(c.last_name, c.first_name, c.phone, c.email, c.branch, c.role);
+    const contactStmt = db.prepare(
+      `INSERT OR IGNORE INTO contacts (last_name, first_name, phone, email, branch, role)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    );
+    contacts.forEach(c => {
+      contactStmt.run(c.last_name, c.first_name, c.phone, c.email, c.branch, c.role);
+    });
+    contactStmt.finalize(() => {
+      console.log(`Seeded ${chemicals.length} chemicals and ${contacts.length} contacts.`);
+    });
   });
-  contactStmt.finalize(() => {
-    console.log(`Seeded ${chemicals.length} chemicals and ${contacts.length} contacts.`);
-    db.close();
-  });
-});
+}
+
+// Run directly via `node seed.js`
+if (require.main === module) {
+  seed(db);
+  setTimeout(() => db.close(), 1000);
+} else {
+  module.exports = seed;
+}
