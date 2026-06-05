@@ -121,3 +121,41 @@ describe('POST /submit-request', () => {
     insertedRequestId = rows[0].id;
   });
 });
+
+describe('GET /vendor/:branch', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Vendor Test Tech', 'Pestex', 'Jane Doe', '2026-07-01', 'approved')
+       RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 1, 'Case', 'approved')
+       RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE id = $1`, [chemId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('returns approved chemicals for the given branch', async () => {
+    const res = await request(app).get('/vendor/Pestex');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Vendor Test Tech');
+    expect(res.text).toContain('Test Chemical');
+  });
+
+  it('does not return requests from other branches', async () => {
+    const res = await request(app).get('/vendor/Select');
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain('Vendor Test Tech');
+  });
+});

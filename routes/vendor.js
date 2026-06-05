@@ -12,7 +12,6 @@ router.get('/:location', async (req, res) => {
         tr.name,
         tr.branch,
         tr.supervisor,
-        tr.pickup_location,
         tr.pickup_date,
         tr.status,
         cr.id AS chem_id,
@@ -23,7 +22,7 @@ router.get('/:location', async (req, res) => {
       FROM technician_requests tr
       LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
       WHERE tr.status = 'approved'
-        AND tr.pickup_location = $1
+        AND tr.branch = $1
         AND cr.status = 'approved'
       ORDER BY tr.pickup_date ASC
     `, [location]);
@@ -63,8 +62,7 @@ router.get('/:location', async (req, res) => {
         html += `
           <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem;">
             <strong>Technician:</strong> ${req.name} |
-            <strong>Branch:</strong> ${req.branch} |
-            <strong>Pickup Location:</strong> ${req.pickup_location} |
+            <strong>Branch (Pickup Location):</strong> ${req.branch} |
             <strong>Date:</strong> ${req.pickup_date}
             <br><br>
             <table border="1" style="width:100%;">
