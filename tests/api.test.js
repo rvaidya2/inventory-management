@@ -75,3 +75,49 @@ describe('technician_requests schema', () => {
     expect(rows.length).toBe(0);
   });
 });
+
+describe('POST /submit-request', () => {
+  let insertedRequestId;
+
+  afterEach(async () => {
+    if (insertedRequestId) {
+      await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [insertedRequestId]);
+      await db.query(`DELETE FROM technician_requests WHERE id = $1`, [insertedRequestId]);
+      insertedRequestId = null;
+    }
+  });
+
+  it('submits a request using branch as location with no pickup_location field', async () => {
+    // First POST to /form2 to set technicianData
+    await request(app)
+      .post('/form2')
+      .type('form')
+      .send({
+        name: 'Test Tech',
+        branch: 'Select',
+        supervisor: 'Jane Doe',
+        pickup_date: '2026-07-01'
+      });
+
+    // Then POST to /submit-request with chemicals
+    const res = await request(app)
+      .post('/submit-request')
+      .type('form')
+      .send({
+        chemical: 'Test Chemical',
+        quantity: '2',
+        unit: 'Case'
+      });
+
+    expect(res.status).toBe(200);
+
+    // Verify row was inserted with branch but no pickup_location
+    const { rows } = await db.query(
+      `SELECT * FROM technician_requests WHERE name = 'Test Tech' ORDER BY id DESC LIMIT 1`
+    );
+    expect(rows.length).toBe(1);
+    expect(rows[0].branch).toBe('Select');
+    expect(rows[0]).not.toHaveProperty('pickup_location');
+    insertedRequestId = rows[0].id;
+  });
+});

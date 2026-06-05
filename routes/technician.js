@@ -21,13 +21,12 @@ router.post('/submit-request', async (req, res) => {
 
   try {
     const result = await db.query(
-      `INSERT INTO technician_requests (name, branch, supervisor, pickup_location, pickup_date, status)
-       VALUES ($1, $2, $3, $4, $5, 'pending') RETURNING id`,
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ($1, $2, $3, $4, 'pending') RETURNING id`,
       [
         technicianData.name,
         technicianData.branch,
         technicianData.supervisor,
-        technicianData.pickup_location,
         technicianData.pickup_date
       ]
     );
@@ -57,7 +56,6 @@ router.get('/submissions', async (req, res) => {
         tr.name,
         tr.branch,
         tr.supervisor,
-        tr.pickup_location,
         tr.pickup_date,
         tr.status,
         cr.chemical,
@@ -90,9 +88,8 @@ router.get('/submissions', async (req, res) => {
       html += `
         <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem;">
           <strong>Name:</strong> ${req.name} |
-          <strong>Branch:</strong> ${req.branch} |
+          <strong>Branch (Pickup Location):</strong> ${req.branch} |
           <strong>Supervisor:</strong> ${req.supervisor} |
-          <strong>Pickup Location:</strong> ${req.pickup_location} |
           <strong>Date:</strong> ${req.pickup_date} |
           <strong>Status:</strong> ${req.status}
           <br><br>
