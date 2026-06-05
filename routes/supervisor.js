@@ -49,7 +49,6 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
         tr.name,
         tr.branch,
         tr.supervisor,
-        tr.pickup_location,
         tr.pickup_date,
         tr.status AS request_status,
         cr.id AS chem_id,
