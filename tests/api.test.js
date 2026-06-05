@@ -63,3 +63,15 @@ describe('GET /api/contacts', () => {
     expect(item).toHaveProperty('role');
   });
 });
+
+describe('technician_requests schema', () => {
+  it('does not have a pickup_location column', async () => {
+    const { rows } = await db.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'technician_requests'
+        AND column_name = 'pickup_location'
+    `);
+    expect(rows.length).toBe(0);
+  });
+});

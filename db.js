@@ -11,10 +11,11 @@ async function initDb() {
     name TEXT NOT NULL,
     branch TEXT NOT NULL,
     supervisor TEXT NOT NULL,
-    pickup_location TEXT NOT NULL,
     pickup_date TEXT NOT NULL,
     status TEXT DEFAULT 'pending'
   )`);
+
+  await pool.query(`ALTER TABLE technician_requests DROP COLUMN IF EXISTS pickup_location`);
 
   await pool.query(`CREATE TABLE IF NOT EXISTS chemical_requests (
     id SERIAL PRIMARY KEY,
