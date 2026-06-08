@@ -92,7 +92,7 @@ const chemicals = [
 // CONTACTS — edit this array to add/remove contacts (supervisors, managers, etc.)
 // Each entry: last_name, first_name, phone, email, branch, role
 const contacts = [
-  { last_name: 'Chase', first_name: 'Alex', phone: '(401) 349-9030', email: 'achase@suburbanpestcontrollc.com', branch: 'Amherst & Suburban', role: 'Branch Manager' },
+  { last_name: 'Chase', first_name: 'Alex', phone: '(401) 349-9030', email: 'achase@suburbanpestcontrollc.com', branch: 'Amherst', role: 'Branch Manager' },
   { last_name: 'Kamara', first_name: 'Michael', phone: '(917) 648-8280', email: 'mkamara@havenopests.com', branch: 'Colony, Metro Pest & Select', role: 'Service Manager' },
   { last_name: 'Murphy', first_name: 'Kieon', phone: '(516) 909-1224', email: 'kmurphy@akaselect.com', branch: 'Colony, Metro Pest & Select', role: 'Service Manager' },
   { last_name: "O'Reilly", first_name: 'Thomas', phone: '(347) 612-5748', email: 'toreilly@havenopests.com', branch: 'Colony, Metro Pest & Select', role: 'Area Manager' },
@@ -113,12 +113,181 @@ const contacts = [
   { last_name: 'Roach', first_name: 'Thomas', phone: '(631) 747-7791', email: 'troach@akaselect.com', branch: 'Select - LI Commercial & Residential', role: 'Service Manager' },
   { last_name: 'Barna', first_name: 'Jeff', phone: '(516) 912-3966', email: 'jbarna@akaselect.com', branch: 'Vermin Control', role: 'Regional Manager' },
   { last_name: 'Swaney', first_name: 'Mary', phone: '', email: 'mswaney@vermincontrol.com', branch: 'Vermin Control', role: 'Office Manager' },
+  { last_name: 'Jerez', first_name: 'Kenny', phone: '', email: 'kjerez@akaselect.com', branch: 'Select', role: 'Service Manager' },
+  { last_name: 'Smith', first_name: 'Craig', phone: '', email: 'csmith@akaselect.com', branch: 'Select', role: 'Service Manager' },
 ];
 
-// LOCATIONS — add here when location sheet is received
-// const locations = [
-//   { name: 'Warehouse 1', address: '...' },
-// ];
+// TECHNICIANS — edit this array to add/remove technicians
+// Each entry: last_name, first_name, branch, supervisor (full name)
+const technicians = [
+  // Select - LI Commercial & Residential (Thomas Roach)
+  { last_name: 'Aguilar', first_name: 'Benjamin', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Bartha', first_name: 'Glenn', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Bernier', first_name: 'Youl', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Berry', first_name: 'Michael', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Chioraia', first_name: 'Hector', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Clarke', first_name: 'Romaine', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Egede', first_name: 'Stanley', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Estrada', first_name: 'Pedro', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Guardado', first_name: 'Wilfredo', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Hain', first_name: 'Matthew', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Hill', first_name: 'Samad', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Johnson', first_name: 'Dequan', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Kidd', first_name: 'Delroy', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Kinny', first_name: 'James', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Rose', first_name: 'Thomas', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Thompson', first_name: 'Christopher', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  { last_name: 'Velez', first_name: 'Camilo', branch: 'Select - LI Commercial & Residential', supervisor: 'Thomas Roach' },
+  // Select (Pavel Canales)
+  { last_name: 'Berberena', first_name: 'James', branch: 'Select', supervisor: 'Pavel Canales' },
+  { last_name: 'Holiday', first_name: 'Jamar', branch: 'Select', supervisor: 'Pavel Canales' },
+  // Select (Kenny Jerez)
+  { last_name: 'Brooks', first_name: 'Hernan', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Diaz', first_name: 'Alfonso', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Gager', first_name: 'Melvin', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Garcia', first_name: 'Juan', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Harrison', first_name: 'Floyd', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Johannes', first_name: 'Antonio', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Mackins', first_name: 'Khalif', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Mann', first_name: 'Dasan', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Murry', first_name: 'Conway', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Okafor', first_name: 'Onyemachi', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Outlaw', first_name: 'Jerome', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Quintero', first_name: 'Luis', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Romero', first_name: 'Restituto', branch: 'Select', supervisor: 'Kenny Jerez' },
+  { last_name: 'Williams', first_name: 'Dominique', branch: 'Select', supervisor: 'Kenny Jerez' },
+  // Select (Kieon Murphy)
+  { last_name: 'Anthony', first_name: 'Carlon', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Avila', first_name: 'Joey', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Bagley', first_name: 'Duval', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Banks', first_name: 'Linwood', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Battle', first_name: 'Lamara', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Bautista', first_name: 'Jose', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Castro', first_name: 'Kevin', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Chambers', first_name: 'Andrew', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Fedee', first_name: 'Cletus', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Gruillon', first_name: 'Jesus', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Narine', first_name: 'Andy', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Pascal', first_name: 'Kornel', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Pascal', first_name: 'Kornil', branch: 'Select', supervisor: 'Kieon Murphy' },
+  { last_name: 'Simmons', first_name: 'Robert', branch: 'Select', supervisor: 'Kieon Murphy' },
+  // Select (Justin Petho)
+  { last_name: 'Bailey', first_name: 'Patrick', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Hare', first_name: 'Mario', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Jordan', first_name: 'Ronald', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Martinez', first_name: 'Aquiles', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Mims', first_name: 'Craig', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Minor', first_name: 'Justin', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Rivera', first_name: 'Julian', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Rivera', first_name: 'Antonio', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Thomas', first_name: 'Glenroy', branch: 'Select', supervisor: 'Justin Petho' },
+  { last_name: 'Walker', first_name: 'Jamell', branch: 'Select', supervisor: 'Justin Petho' },
+  // Amherst (Alex Chase)
+  { last_name: 'Ambrose', first_name: 'Pat', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Bomasuto', first_name: 'Vinny', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Braidich', first_name: 'Tessa', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Ferro', first_name: 'Gigi', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Goodwin', first_name: 'Marc', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Mages', first_name: 'Kam', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Pepe', first_name: 'Sam', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Persch', first_name: 'Trevor', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Price', first_name: 'Simon', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Swanson', first_name: 'Rick', branch: 'Amherst', supervisor: 'Alex Chase' },
+  { last_name: 'Thorn', first_name: 'Tom', branch: 'Amherst', supervisor: 'Alex Chase' },
+  // Suburban (Alex Chase)
+  { last_name: 'Bishop', first_name: 'Dan', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Burke', first_name: 'Greg', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Dole', first_name: 'Ron', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Engelhardt', first_name: 'Jimmy', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Franklin', first_name: 'Josh', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Geercken', first_name: 'Tyler', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Marrano', first_name: 'Davin', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Mazurowski', first_name: 'Kyle', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'McEvoy', first_name: 'Ashton', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'McEvoy', first_name: 'Mike', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Metzinger', first_name: 'Brandon', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Moyer', first_name: 'Devin', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Siska', first_name: 'Jared', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Sortisio', first_name: 'Ryan', branch: 'Suburban', supervisor: 'Alex Chase' },
+  { last_name: 'Volk', first_name: 'Quinn', branch: 'Suburban', supervisor: 'Alex Chase' },
+  // Colony, Metro Pest & Select (Thomas O'Reilly)
+  { last_name: 'Davis', first_name: 'Anthony', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Farmer', first_name: 'Jayden', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Hall', first_name: 'Keyon', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Hartnett', first_name: 'Lester', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Inje', first_name: 'Brian', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Juarez', first_name: 'Abel', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Ortiz', first_name: 'Jordan', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Rodriguez', first_name: 'Ernesto', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Watts-Tarver', first_name: 'Jamal', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  { last_name: 'Wright', first_name: 'Tion', branch: 'Colony, Metro Pest & Select', supervisor: 'Thomas O\'Reilly' },
+  // Gannon (Jennifer Savastino)
+  { last_name: 'Ben-Simone', first_name: 'Nathan', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  { last_name: 'Bialy-Viau', first_name: 'Kristopher', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  { last_name: 'Carr', first_name: 'Peter', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  { last_name: 'Chapin', first_name: 'Joshua', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  { last_name: 'DeBottis', first_name: 'Joseph', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  { last_name: 'Hoige', first_name: 'Fred', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  { last_name: 'O\'Connor', first_name: 'Colin', branch: 'Gannon', supervisor: 'Jennifer Savastino' },
+  // Lincoln (Glen Martin)
+  { last_name: 'Amaral', first_name: 'Mike', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Beausolieul', first_name: 'James', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Diaz', first_name: 'Kilvi', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Diaz', first_name: 'Robert', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Mitchell', first_name: 'Nat', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Roy', first_name: 'Shannon', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Shaw', first_name: 'Joe', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Snow', first_name: 'Alex', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  { last_name: 'Steeves', first_name: 'Jack', branch: 'Lincoln', supervisor: 'Glen Martin' },
+  // Metro Pest (Peter Jones)
+  { last_name: 'Barthelemy', first_name: 'Dabre', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Betancur', first_name: 'Juan', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Borja', first_name: 'Marco', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Brown', first_name: 'Raheem', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Conyers', first_name: 'Jamel', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Demedina', first_name: 'Herbert', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Henry', first_name: 'Frederick', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Khan', first_name: 'Mohammad', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Leonor', first_name: 'Edward', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Massiah', first_name: 'Onan', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Miranda', first_name: 'Luis', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Mosquera', first_name: 'Andres', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Rhooms', first_name: 'Brandon', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Siguencia', first_name: 'Luis', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  { last_name: 'Singh', first_name: 'Kumar', branch: 'Metro Pest', supervisor: 'Peter Jones' },
+  // On The Spot (Matt LaRue)
+  { last_name: 'Anderson', first_name: 'Herron', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  { last_name: 'Brewer', first_name: 'Gilbert', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  { last_name: 'Byars', first_name: 'Steven', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  { last_name: 'Joseph', first_name: 'Carlos', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  { last_name: 'Kennedy', first_name: 'Darryl', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  { last_name: 'Meyer', first_name: 'Charles', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  { last_name: 'Pride', first_name: 'Robert', branch: 'On The Spot', supervisor: 'Matt LaRue' },
+  // Pestex (Bill Greeley)
+  { last_name: 'Calderwood', first_name: 'Jared', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Coyle', first_name: 'James', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Dudley', first_name: 'Byron', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Garneau', first_name: 'Mike', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Gonzalez', first_name: 'Julio', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Hussey', first_name: 'Marty', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Johnson', first_name: 'Lederick', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Lafleur', first_name: 'Ethan', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Latimer', first_name: 'Howard', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Lavallee', first_name: 'Kaylee', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Russell', first_name: 'Kristian', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  { last_name: 'Williams', first_name: 'Brian', branch: 'Pestex', supervisor: 'Bill Greeley' },
+  // Vermin Control (Mary Swaney)
+  { last_name: 'DeVault', first_name: 'Brendan', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Hendrickson', first_name: 'Stephen', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'McKeel', first_name: 'Patrick', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Nara', first_name: 'Ron', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Riley', first_name: 'Robert', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Sabatula', first_name: 'Evan', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Swaney III', first_name: 'Don', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Swaney Sr', first_name: 'Don', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Tewell', first_name: 'Al', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+  { last_name: 'Walkos', first_name: 'Brian', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
+];
 
 async function seed(pool) {
   for (const c of chemicals) {
@@ -131,12 +300,20 @@ async function seed(pool) {
   for (const c of contacts) {
     await pool.query(
       `INSERT INTO contacts (last_name, first_name, phone, email, branch, role)
-       VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (email) DO NOTHING`,
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (email) DO UPDATE SET branch = EXCLUDED.branch`,
       [c.last_name, c.first_name, c.phone, c.email, c.branch, c.role]
     );
   }
-  console.log(`Seeded ${chemicals.length} chemicals and ${contacts.length} contacts.`);
-}
+  for (const t of technicians) {
+    await pool.query(
+      `INSERT INTO technicians (first_name, last_name, branch, supervisor)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (first_name, last_name, branch, supervisor) DO NOTHING`,
+      [t.first_name, t.last_name, t.branch, t.supervisor]
+    );
+  }
+  console.log(`Seeded ${chemicals.length} chemicals, ${contacts.length} contacts, ${technicians.length} technicians.`);
 
 if (require.main === module) {
   seed(db).then(() => process.exit(0)).catch(err => { console.error(err); process.exit(1); });

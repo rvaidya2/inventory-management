@@ -24,4 +24,15 @@ router.get('/contacts', async (req, res) => {
   }
 });
 
+router.get('/technicians', async (req, res) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT first_name, last_name, branch, supervisor FROM technicians ORDER BY last_name, first_name'
+    );
+    res.json(rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch technicians.' });
+  }
+});
+
 module.exports = router;

@@ -43,6 +43,15 @@ async function initDb() {
     branch TEXT,
     role TEXT
   )`);
+
+  await pool.query(`CREATE TABLE IF NOT EXISTS technicians (
+    id SERIAL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name  TEXT NOT NULL,
+    branch     TEXT NOT NULL,
+    supervisor TEXT NOT NULL,
+    UNIQUE(first_name, last_name, branch, supervisor)
+  )`);
 }
 
 initDb().catch(err => console.error('DB init error:', err));
