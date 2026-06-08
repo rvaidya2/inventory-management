@@ -290,6 +290,15 @@ const technicians = [
 ];
 
 async function seed(pool) {
+  await pool.query(`CREATE TABLE IF NOT EXISTS technicians (
+    id SERIAL PRIMARY KEY,
+    first_name TEXT NOT NULL,
+    last_name  TEXT NOT NULL,
+    branch     TEXT NOT NULL,
+    supervisor TEXT NOT NULL,
+    UNIQUE(first_name, last_name, branch, supervisor)
+  )`);
+
   for (const c of chemicals) {
     await pool.query(
       `INSERT INTO chemicals (material_code, product_name, epa_registration, replacement_product)
