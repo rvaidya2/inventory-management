@@ -314,6 +314,7 @@ async function seed(pool) {
     );
   }
   console.log(`Seeded ${chemicals.length} chemicals, ${contacts.length} contacts, ${technicians.length} technicians.`);
+}
 
 if (require.main === module) {
   seed(db).then(() => process.exit(0)).catch(err => { console.error(err); process.exit(1); });
