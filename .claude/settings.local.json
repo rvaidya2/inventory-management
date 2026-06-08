@@ -7,7 +7,16 @@
       "PowerShell(npm install *)",
       "PowerShell($env:PATH)",
       "Bash(git commit *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "PowerShell(Get-ChildItem *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\RujutaVaidya\\\\inventory-management\" -Recurse -File | Where-Object { $_.Extension -match \"\\\\.\\(js|ts|jsx|tsx|json\\)$\" -and $_.FullName -notmatch \"node_modules\" } | Select-Object -First 50 FullName)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\RujutaVaidya\\\\inventory-management\" -Recurse -File | Where-Object { $_.FullName -notmatch \"node_modules\" } | Select-Object FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\RujutaVaidya\\\\inventory-management\" -Force)",
+      "Bash(Select-Object Name, Mode)",
+      "Bash(git remote *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\RujutaVaidya\\\\inventory-management\" -Exclude node_modules | Select-Object Name, @{Name='Type';Expression={if \\($_.PSIsContainer\\) {'DIR'} else {'FILE'}}} | Format-Table -AutoSize)",
+      "Bash(git checkout *)",
+      "WebFetch(domain:inventory-management-hiyg.onrender.com)"
     ]
   }
 }
