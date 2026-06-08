@@ -16,7 +16,7 @@
           data.forEach((t, i) => {
             const opt = document.createElement('option');
             opt.value = t.first_name + ' ' + t.last_name;
-            opt.textContent = t.last_name.toUpperCase() + ', ' + t.first_name;
+            opt.textContent = t.last_name.toUpperCase() + ', ' + t.first_name.toUpperCase();
             opt.dataset.idx = i;
             select.appendChild(opt);
           });
