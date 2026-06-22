@@ -192,7 +192,7 @@ router.get('/:location', async (req, res) => {
         <td>${chem.quantity}</td>
         <td>${esc(chem.unit)}</td>
         <td>
-          <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical)}, ${chem.quantity})">Modify</button>
+          <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical).replace(/"/g, '&quot;')}, ${chem.quantity})">Modify</button>
           &nbsp;
           <form method="POST" action="/vendor/fulfill/${encodeURIComponent(location)}" style="display:inline;">
             <input type="hidden" name="id" value="${chem.chem_id}">

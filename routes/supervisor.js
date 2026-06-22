@@ -151,7 +151,7 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
                   <input type="hidden" name="id" value="${chem.chem_id}">
                   <button type="submit">Reject</button>
                 </form>
-                <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical)}, ${chem.quantity})">Modify</button>
+                <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical).replace(/"/g, '&quot;')}, ${chem.quantity})">Modify</button>
               ` : esc(chem.status.charAt(0).toUpperCase() + chem.status.slice(1))}
             </td>
           </tr>
