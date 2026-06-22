@@ -18,76 +18,136 @@ router.get('/:location', async (req, res) => {
         cr.chemical,
         cr.quantity,
         cr.unit,
-        cr.status AS chem_status
+        cr.status AS chem_status,
+        cr.original_chemical,
+        cr.original_quantity
       FROM technician_requests tr
       LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
       WHERE tr.status = 'approved'
         AND tr.branch = $1
-        AND cr.status = 'approved'
       ORDER BY tr.pickup_date ASC
     `, [location]);
 
     const grouped = {};
     rows.forEach(row => {
       if (!grouped[row.request_id]) {
-        grouped[row.request_id] = { ...row, chemicals: [] };
-        delete grouped[row.request_id].chemical;
-        delete grouped[row.request_id].quantity;
-        delete grouped[row.request_id].unit;
-        delete grouped[row.request_id].chem_status;
-        delete grouped[row.request_id].chem_id;
+        grouped[row.request_id] = {
+          request_id: row.request_id,
+          name: row.name,
+          branch: row.branch,
+          pickup_date: row.pickup_date,
+          chemicals: []
+        };
       }
-      if (row.chem_status === 'approved') {
+      if (row.chem_id) {
         grouped[row.request_id].chemicals.push({
           chem_id: row.chem_id,
           chemical: row.chemical,
           quantity: row.quantity,
-          unit: row.unit
+          unit: row.unit,
+          status: row.chem_status
         });
       }
     });
+
+    const allRequests = Object.values(grouped);
+    const activeRequests = allRequests.filter(r => r.chemicals.some(c => c.status === 'approved'));
+    const completedRequests = allRequests.filter(r => r.chemicals.length > 0 && r.chemicals.every(c => c.status === 'fulfilled'));
 
     let html = `
-      <html>
-      <head>
-        <link rel="stylesheet" href="/styles.css">
-        <title>Vendor Pickup List - ${location}</title>
-      </head>
-      <body>
-        <h2>Approved Requests for Pickup - ${location}</h2>
-    `;
+  <html>
+  <head>
+    <link rel="stylesheet" href="/styles.css">
+    <title>Vendor Pickup List - ${location}</title>
+    <script>
+      let _chemicals = [];
+      fetch('/api/chemicals').then(r => r.json()).then(data => { _chemicals = data; });
 
-    Object.values(grouped).forEach(req => {
-      if (req.chemicals.length > 0) {
-        html += `
-          <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem;">
-            <strong>Technician:</strong> ${req.name} |
-            <strong>Branch (Pickup Location):</strong> ${req.branch} |
-            <strong>Date:</strong> ${req.pickup_date}
-            <br><br>
-            <table border="1" style="width:100%;">
-              <tr><th>Chemical</th><th>Quantity</th><th>Unit</th><th>Action</th></tr>`;
-
-        req.chemicals.forEach(chem => {
-          html += `
-            <tr>
-              <td>${chem.chemical}</td>
-              <td>${chem.quantity}</td>
-              <td>${chem.unit}</td>
-              <td>
-                <form method="POST" action="/vendor/fulfill/${encodeURIComponent(location)}" style="display:inline;">
-                  <input type="hidden" name="id" value="${chem.chem_id}">
-                  <button type="submit">Fulfill</button>
-                </form>
-              </td>
-            </tr>`;
-        });
-
-        html += `</table></div>`;
+      function toggleModify(id, currentChem, currentQty) {
+        const row = document.getElementById('mod-row-' + id);
+        if (row.style.display === 'none') {
+          row.style.display = '';
+          const sel = document.getElementById('mod-chem-' + id);
+          if (sel.options.length === 0) {
+            _chemicals.forEach(c => {
+              const opt = document.createElement('option');
+              opt.value = c.product_name;
+              opt.textContent = c.product_name;
+              if (c.product_name === currentChem) opt.selected = true;
+              sel.appendChild(opt);
+            });
+          }
+          document.getElementById('mod-qty-' + id).value = currentQty;
+        } else {
+          row.style.display = 'none';
+        }
       }
+    <\/script>
+  </head>
+  <body>
+    <h2>Approved Requests for Pickup - ${location}</h2>`;
+
+    activeRequests.forEach(req => {
+      const approvedChems = req.chemicals.filter(c => c.status === 'approved');
+      if (approvedChems.length === 0) return;
+
+      html += `
+    <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem;">
+      <strong>Technician:</strong> ${req.name} |
+      <strong>Branch (Pickup Location):</strong> ${req.branch} |
+      <strong>Date:</strong> ${req.pickup_date}
+      <br><br>
+      <table border="1" style="width:100%;">
+        <tr><th>Chemical</th><th>Quantity</th><th>Unit</th><th>Action</th></tr>`;
+
+      approvedChems.forEach(chem => {
+        html += `
+      <tr>
+        <td>${chem.chemical}</td>
+        <td>${chem.quantity}</td>
+        <td>${chem.unit}</td>
+        <td>
+          <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical)}, ${chem.quantity})">Modify</button>
+          &nbsp;
+          <form method="POST" action="/vendor/fulfill/${encodeURIComponent(location)}" style="display:inline;">
+            <input type="hidden" name="id" value="${chem.chem_id}">
+            <button type="submit">Fulfill</button>
+          </form>
+        </td>
+      </tr>
+      <tr id="mod-row-${chem.chem_id}" style="display:none">
+        <td colspan="4" style="padding:0.5rem; background:#f9f9f9;">
+          <form method="POST" action="/vendor/chem-modify/${encodeURIComponent(location)}" style="display:inline;">
+            <input type="hidden" name="id" value="${chem.chem_id}">
+            Chemical: <select id="mod-chem-${chem.chem_id}" name="chemical" required></select>
+            &nbsp;Qty: <input id="mod-qty-${chem.chem_id}" type="number" name="quantity" min="1" required style="width:60px;">
+            &nbsp;<button type="submit">Save</button>
+            &nbsp;<button type="button" onclick="toggleModify('${chem.chem_id}')">Cancel</button>
+          </form>
+        </td>
+      </tr>`;
+      });
+
+      html += `</table></div>`;
     });
 
-    html += '</body></html>';
+    if (completedRequests.length > 0) {
+      html += `<h2>Completed</h2>`;
+      completedRequests.forEach(req => {
+        html += `
+      <div style="border:1px solid #aaa; padding:1rem; margin-bottom:1rem; background:#f5fff5;">
+        <strong>Technician:</strong> ${req.name} |
+        <strong>Branch:</strong> ${req.branch} |
+        <strong>Date:</strong> ${req.pickup_date}
+        &nbsp;&nbsp;
+        <a href="/vendor/print/${req.request_id}" target="_blank">
+          <button type="button">Print</button>
+        </a>
+      </div>`;
+      });
+    }
+
+    html += `</body></html>`;
     res.send(html);
   } catch (err) {
     res.send('Error retrieving vendor data.');
