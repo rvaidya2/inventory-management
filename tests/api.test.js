@@ -159,3 +159,16 @@ describe('GET /vendor/:branch', () => {
     expect(res.text).not.toContain('Vendor Test Tech');
   });
 });
+
+describe('chemical_requests schema', () => {
+  it('has original_chemical and original_quantity columns', async () => {
+    const { rows } = await db.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'chemical_requests'
+        AND column_name IN ('original_chemical', 'original_quantity')
+    `);
+    const names = rows.map(r => r.column_name);
+    expect(names).toContain('original_chemical');
+    expect(names).toContain('original_quantity');
+  });
+});

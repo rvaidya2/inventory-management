@@ -52,6 +52,9 @@ async function initDb() {
     supervisor TEXT NOT NULL,
     UNIQUE(first_name, last_name, branch, supervisor)
   )`);
+
+  await pool.query(`ALTER TABLE chemical_requests ADD COLUMN IF NOT EXISTS original_chemical TEXT`);
+  await pool.query(`ALTER TABLE chemical_requests ADD COLUMN IF NOT EXISTS original_quantity INTEGER`);
 }
 
 pool.ready = initDb().catch(err => console.error('DB init error:', err));
