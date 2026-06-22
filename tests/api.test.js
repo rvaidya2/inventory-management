@@ -240,6 +240,47 @@ describe('POST /supervisor/chem-modify/:supervisorName', () => {
   });
 });
 
+describe('GET /vendor/print/:requestId', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Print Test Tech', 'Pestex', 'Jane Doe', '2026-07-15', 'approved') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests
+         (request_id, chemical, quantity, unit, status, original_chemical, original_quantity)
+       VALUES ($1, 'BIFEN I/T', 2, 'case', 'fulfilled', 'Test Chemical', 3) RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('returns 200 with technician name and both original and modified chemical', async () => {
+    const res = await request(app).get(`/vendor/print/${requestId}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Print Test Tech');
+    expect(res.text).toContain('BIFEN I/T');
+    expect(res.text).toContain('Test Chemical');
+  });
+
+  it('returns error when not all chemicals are fulfilled', async () => {
+    await db.query(
+      `UPDATE chemical_requests SET status = 'approved' WHERE id = $1`, [chemId]
+    );
+    const res = await request(app).get(`/vendor/print/${requestId}`);
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('Cannot print');
+  });
+});
+
 describe('POST /vendor/chem-modify/:location', () => {
   let requestId, chemId;
 

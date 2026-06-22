@@ -2,6 +2,78 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
+router.get('/print/:requestId', async (req, res) => {
+  const requestId = req.params.requestId;
+  try {
+    const { rows: check } = await db.query(
+      `SELECT COUNT(*) AS not_fulfilled FROM chemical_requests
+       WHERE request_id = $1 AND status != 'fulfilled'`,
+      [requestId]
+    );
+    if (parseInt(check[0].not_fulfilled) > 0) {
+      return res.send('Cannot print: not all chemicals are fulfilled.');
+    }
+
+    const { rows } = await db.query(`
+      SELECT tr.name, tr.branch, tr.pickup_date,
+        cr.chemical, cr.quantity, cr.unit,
+        cr.original_chemical, cr.original_quantity
+      FROM technician_requests tr
+      LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
+      WHERE tr.id = $1
+      ORDER BY cr.id ASC
+    `, [requestId]);
+
+    if (rows.length === 0) return res.send('Request not found.');
+
+    const { name, branch, pickup_date } = rows[0];
+
+    let html = `<!DOCTYPE html>
+<html>
+<head>
+  <title>Inventory Print - ${name}</title>
+  <link rel="stylesheet" href="/styles.css">
+  <style>@media print { .no-print { display: none; } }</style>
+</head>
+<body>
+  <button class="no-print" onclick="window.print()">Print</button>
+  <h2>Inventory Request</h2>
+  <p>
+    <strong>Technician:</strong> ${name} &nbsp;|&nbsp;
+    <strong>Branch:</strong> ${branch} &nbsp;|&nbsp;
+    <strong>Pickup Date:</strong> ${pickup_date}
+  </p>
+  <table border="1" style="width:100%; border-collapse:collapse;">
+    <tr>
+      <th>Chemical</th>
+      <th>Qty</th>
+      <th>Unit</th>
+      <th>Modified From</th>
+      <th>Original Qty</th>
+    </tr>`;
+
+    rows.forEach(cr => {
+      html += `
+    <tr>
+      <td>${cr.chemical}</td>
+      <td>${cr.quantity}</td>
+      <td>${cr.unit}</td>
+      <td>${cr.original_chemical || '&mdash;'}</td>
+      <td>${cr.original_quantity !== null ? cr.original_quantity : '&mdash;'}</td>
+    </tr>`;
+    });
+
+    html += `</table>
+</body>
+</html>`;
+
+    res.send(html);
+  } catch (err) {
+    console.error(err);
+    res.send('Error generating print view.');
+  }
+});
+
 router.get('/:location', async (req, res) => {
   const location = decodeURIComponent(req.params.location);
 
