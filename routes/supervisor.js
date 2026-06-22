@@ -81,7 +81,36 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
       });
     });
 
-    let html = `<html><head><link rel="stylesheet" href="/styles.css"><title>Supervisor Approvals</title></head><body>`;
+    let html = `<html>
+<head>
+  <link rel="stylesheet" href="/styles.css">
+  <title>Supervisor Approvals</title>
+  <script>
+    let _chemicals = [];
+    fetch('/api/chemicals').then(r => r.json()).then(data => { _chemicals = data; });
+
+    function toggleModify(id, currentChem, currentQty) {
+      const row = document.getElementById('mod-row-' + id);
+      if (row.style.display === 'none') {
+        row.style.display = '';
+        const sel = document.getElementById('mod-chem-' + id);
+        if (sel.options.length === 0) {
+          _chemicals.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.product_name;
+            opt.textContent = c.product_name;
+            if (c.product_name === currentChem) opt.selected = true;
+            sel.appendChild(opt);
+          });
+        }
+        document.getElementById('mod-qty-' + id).value = currentQty;
+      } else {
+        row.style.display = 'none';
+      }
+    }
+  <\/script>
+</head>
+<body>`;
     html += `<h2>Pending Technician Requests for ${supervisorName}</h2>`;
 
     Object.values(grouped).forEach(req => {
@@ -113,7 +142,19 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
                   <input type="hidden" name="id" value="${chem.chem_id}">
                   <button type="submit">Reject</button>
                 </form>
+                <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical)}, ${chem.quantity})">Modify</button>
               ` : chem.status.charAt(0).toUpperCase() + chem.status.slice(1)}
+            </td>
+          </tr>
+          <tr id="mod-row-${chem.chem_id}" style="display:none">
+            <td colspan="5" style="padding:0.5rem; background:#f9f9f9;">
+              <form method="POST" action="/supervisor/chem-modify/${supervisorName}" style="display:inline;">
+                <input type="hidden" name="id" value="${chem.chem_id}">
+                Chemical: <select id="mod-chem-${chem.chem_id}" name="chemical" required></select>
+                &nbsp;Qty: <input id="mod-qty-${chem.chem_id}" type="number" name="quantity" min="1" required style="width:60px;">
+                &nbsp;<button type="submit">Save</button>
+                &nbsp;<button type="button" onclick="toggleModify('${chem.chem_id}')">Cancel</button>
+              </form>
             </td>
           </tr>`;
       });
