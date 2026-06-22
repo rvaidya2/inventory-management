@@ -172,4 +172,35 @@ router.post('/final-approve/:supervisorName', requireSupervisorAuth, async (req,
   }
 });
 
+router.post('/chem-modify/:supervisorName', requireSupervisorAuth, async (req, res) => {
+  const { id, chemical, quantity } = req.body;
+  try {
+    const { rows } = await db.query(
+      `SELECT chemical, quantity, original_chemical FROM chemical_requests WHERE id = $1`,
+      [id]
+    );
+    if (rows.length === 0) return res.send('Chemical not found.');
+
+    const row = rows[0];
+    if (row.original_chemical === null) {
+      await db.query(
+        `UPDATE chemical_requests
+         SET original_chemical = $1, original_quantity = $2,
+             chemical = $3, quantity = $4, status = 'modified'
+         WHERE id = $5`,
+        [row.chemical, row.quantity, chemical, parseInt(quantity), id]
+      );
+    } else {
+      await db.query(
+        `UPDATE chemical_requests SET chemical = $1, quantity = $2, status = 'modified' WHERE id = $3`,
+        [chemical, parseInt(quantity), id]
+      );
+    }
+    res.redirect(`/supervisor/${req.params.supervisorName}`);
+  } catch (err) {
+    console.error(err);
+    res.send('Error modifying chemical.');
+  }
+});
+
 module.exports = router;

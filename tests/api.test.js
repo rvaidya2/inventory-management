@@ -172,3 +172,70 @@ describe('chemical_requests schema', () => {
     expect(names).toContain('original_quantity');
   });
 });
+
+describe('POST /supervisor/chem-modify/:supervisorName', () => {
+  let agent;
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    agent = request.agent(app);
+    await agent
+      .post('/supervisor/login')
+      .type('form')
+      .send({ password: 'testpass' });
+
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Mod Test Tech', 'Select', 'Jane Doe', '2026-07-01', 'pending') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 3, 'case', 'pending') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('saves original values on first modification and sets status to modified', async () => {
+    const res = await agent
+      .post('/supervisor/chem-modify/Jane%20Doe')
+      .type('form')
+      .send({ id: chemId, chemical: 'BIFEN I/T', quantity: '5' });
+
+    expect(res.status).toBe(302);
+
+    const { rows } = await db.query(
+      `SELECT * FROM chemical_requests WHERE id = $1`, [chemId]
+    );
+    expect(rows[0].chemical).toBe('BIFEN I/T');
+    expect(rows[0].quantity).toBe(5);
+    expect(rows[0].original_chemical).toBe('Test Chemical');
+    expect(rows[0].original_quantity).toBe(3);
+    expect(rows[0].status).toBe('modified');
+  });
+
+  it('keeps original values on second modification', async () => {
+    await agent
+      .post('/supervisor/chem-modify/Jane%20Doe')
+      .type('form')
+      .send({ id: chemId, chemical: 'BIFEN I/T', quantity: '5' });
+
+    await agent
+      .post('/supervisor/chem-modify/Jane%20Doe')
+      .type('form')
+      .send({ id: chemId, chemical: 'TALSTAR P', quantity: '2' });
+
+    const { rows } = await db.query(
+      `SELECT * FROM chemical_requests WHERE id = $1`, [chemId]
+    );
+    expect(rows[0].chemical).toBe('TALSTAR P');
+    expect(rows[0].original_chemical).toBe('Test Chemical');
+    expect(rows[0].original_quantity).toBe(3);
+  });
+});
