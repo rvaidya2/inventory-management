@@ -54,6 +54,6 @@ async function initDb() {
   )`);
 }
 
-initDb().catch(err => console.error('DB init error:', err));
+pool.ready = initDb().catch(err => console.error('DB init error:', err));
 
 module.exports = pool;
