@@ -239,3 +239,62 @@ describe('POST /supervisor/chem-modify/:supervisorName', () => {
     expect(rows[0].original_quantity).toBe(3);
   });
 });
+
+describe('POST /vendor/chem-modify/:location', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Vendor Mod Tech', 'Pestex', 'Jane Doe', '2026-07-01', 'approved') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 3, 'case', 'approved') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('saves original values on first modification', async () => {
+    const res = await request(app)
+      .post('/vendor/chem-modify/Pestex')
+      .type('form')
+      .send({ id: chemId, chemical: 'BIFEN I/T', quantity: '2' });
+
+    expect(res.status).toBe(302);
+
+    const { rows } = await db.query(
+      `SELECT * FROM chemical_requests WHERE id = $1`, [chemId]
+    );
+    expect(rows[0].chemical).toBe('BIFEN I/T');
+    expect(rows[0].quantity).toBe(2);
+    expect(rows[0].original_chemical).toBe('Test Chemical');
+    expect(rows[0].original_quantity).toBe(3);
+  });
+
+  it('keeps original values on second modification', async () => {
+    await request(app)
+      .post('/vendor/chem-modify/Pestex')
+      .type('form')
+      .send({ id: chemId, chemical: 'BIFEN I/T', quantity: '2' });
+
+    await request(app)
+      .post('/vendor/chem-modify/Pestex')
+      .type('form')
+      .send({ id: chemId, chemical: 'TALSTAR P', quantity: '1' });
+
+    const { rows } = await db.query(
+      `SELECT * FROM chemical_requests WHERE id = $1`, [chemId]
+    );
+    expect(rows[0].chemical).toBe('TALSTAR P');
+    expect(rows[0].original_chemical).toBe('Test Chemical');
+    expect(rows[0].original_quantity).toBe(3);
+  });
+});
