@@ -2,13 +2,26 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
-router.get('/print/:requestId', async (req, res) => {
-  const requestId = req.params.requestId;
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+router.get('/print/:location/:requestId', async (req, res) => {
+  const requestId = parseInt(req.params.requestId, 10);
+  if (!Number.isFinite(requestId)) return res.status(404).send('Not found.');
+  const location = decodeURIComponent(req.params.location);
   try {
     const { rows: check } = await db.query(
-      `SELECT COUNT(*) AS not_fulfilled FROM chemical_requests
-       WHERE request_id = $1 AND status != 'fulfilled'`,
-      [requestId]
+      `SELECT COUNT(*) AS not_fulfilled
+       FROM chemical_requests cr
+       JOIN technician_requests tr ON tr.id = cr.request_id
+       WHERE cr.request_id = $1 AND tr.branch = $2 AND cr.status != 'fulfilled'`,
+      [requestId, location]
     );
     if (parseInt(check[0].not_fulfilled) > 0) {
       return res.send('Cannot print: not all chemicals are fulfilled.');
@@ -20,9 +33,9 @@ router.get('/print/:requestId', async (req, res) => {
         cr.original_chemical, cr.original_quantity
       FROM technician_requests tr
       LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
-      WHERE tr.id = $1
+      WHERE tr.id = $1 AND tr.branch = $2
       ORDER BY cr.id ASC
-    `, [requestId]);
+    `, [requestId, location]);
 
     if (rows.length === 0) return res.send('Request not found.');
 
@@ -31,7 +44,7 @@ router.get('/print/:requestId', async (req, res) => {
     let html = `<!DOCTYPE html>
 <html>
 <head>
-  <title>Inventory Print - ${name}</title>
+  <title>Inventory Print - ${esc(name)}</title>
   <link rel="stylesheet" href="/styles.css">
   <style>@media print { .no-print { display: none; } }</style>
 </head>
@@ -39,9 +52,9 @@ router.get('/print/:requestId', async (req, res) => {
   <button class="no-print" onclick="window.print()">Print</button>
   <h2>Inventory Request</h2>
   <p>
-    <strong>Technician:</strong> ${name} &nbsp;|&nbsp;
-    <strong>Branch:</strong> ${branch} &nbsp;|&nbsp;
-    <strong>Pickup Date:</strong> ${pickup_date}
+    <strong>Technician:</strong> ${esc(name)} &nbsp;|&nbsp;
+    <strong>Branch:</strong> ${esc(branch)} &nbsp;|&nbsp;
+    <strong>Pickup Date:</strong> ${esc(pickup_date)}
   </p>
   <table border="1" style="width:100%; border-collapse:collapse;">
     <tr>
@@ -55,10 +68,10 @@ router.get('/print/:requestId', async (req, res) => {
     rows.forEach(cr => {
       html += `
     <tr>
-      <td>${cr.chemical}</td>
+      <td>${esc(cr.chemical)}</td>
       <td>${cr.quantity}</td>
-      <td>${cr.unit}</td>
-      <td>${cr.original_chemical || '&mdash;'}</td>
+      <td>${esc(cr.unit)}</td>
+      <td>${cr.original_chemical ? esc(cr.original_chemical) : '&mdash;'}</td>
       <td>${cr.original_quantity !== null ? cr.original_quantity : '&mdash;'}</td>
     </tr>`;
     });
@@ -130,7 +143,7 @@ router.get('/:location', async (req, res) => {
   <html>
   <head>
     <link rel="stylesheet" href="/styles.css">
-    <title>Vendor Pickup List - ${location}</title>
+    <title>Vendor Pickup List - ${esc(location)}</title>
     <script>
       let _chemicals = [];
       fetch('/api/chemicals').then(r => r.json()).then(data => { _chemicals = data; });
@@ -157,7 +170,7 @@ router.get('/:location', async (req, res) => {
     <\/script>
   </head>
   <body>
-    <h2>Approved Requests for Pickup - ${location}</h2>`;
+    <h2>Approved Requests for Pickup - ${esc(location)}</h2>`;
 
     activeRequests.forEach(req => {
       const approvedChems = req.chemicals.filter(c => c.status === 'approved');
@@ -165,9 +178,9 @@ router.get('/:location', async (req, res) => {
 
       html += `
     <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1rem;">
-      <strong>Technician:</strong> ${req.name} |
-      <strong>Branch (Pickup Location):</strong> ${req.branch} |
-      <strong>Date:</strong> ${req.pickup_date}
+      <strong>Technician:</strong> ${esc(req.name)} |
+      <strong>Branch (Pickup Location):</strong> ${esc(req.branch)} |
+      <strong>Date:</strong> ${esc(req.pickup_date)}
       <br><br>
       <table border="1" style="width:100%;">
         <tr><th>Chemical</th><th>Quantity</th><th>Unit</th><th>Action</th></tr>`;
@@ -175,9 +188,9 @@ router.get('/:location', async (req, res) => {
       approvedChems.forEach(chem => {
         html += `
       <tr>
-        <td>${chem.chemical}</td>
+        <td>${esc(chem.chemical)}</td>
         <td>${chem.quantity}</td>
-        <td>${chem.unit}</td>
+        <td>${esc(chem.unit)}</td>
         <td>
           <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical)}, ${chem.quantity})">Modify</button>
           &nbsp;
@@ -208,11 +221,11 @@ router.get('/:location', async (req, res) => {
       completedRequests.forEach(req => {
         html += `
       <div style="border:1px solid #aaa; padding:1rem; margin-bottom:1rem; background:#f5fff5;">
-        <strong>Technician:</strong> ${req.name} |
-        <strong>Branch:</strong> ${req.branch} |
-        <strong>Date:</strong> ${req.pickup_date}
+        <strong>Technician:</strong> ${esc(req.name)} |
+        <strong>Branch:</strong> ${esc(req.branch)} |
+        <strong>Date:</strong> ${esc(req.pickup_date)}
         &nbsp;&nbsp;
-        <a href="/vendor/print/${req.request_id}" target="_blank">
+        <a href="/vendor/print/${encodeURIComponent(location)}/${req.request_id}" target="_blank">
           <button type="button">Print</button>
         </a>
       </div>`;
@@ -229,7 +242,12 @@ router.get('/:location', async (req, res) => {
 router.post('/fulfill/:location', async (req, res) => {
   const location = decodeURIComponent(req.params.location);
   try {
-    await db.query(`UPDATE chemical_requests SET status = 'fulfilled' WHERE id = $1`, [req.body.id]);
+    await db.query(
+      `UPDATE chemical_requests cr SET status = 'fulfilled'
+       FROM technician_requests tr
+       WHERE cr.id = $1 AND cr.request_id = tr.id AND tr.branch = $2`,
+      [req.body.id, location]
+    );
     res.redirect(`/vendor/${encodeURIComponent(location)}`);
   } catch (err) {
     res.send('Error fulfilling chemical.');
@@ -239,12 +257,17 @@ router.post('/fulfill/:location', async (req, res) => {
 router.post('/chem-modify/:location', async (req, res) => {
   const location = decodeURIComponent(req.params.location);
   const { id, chemical, quantity } = req.body;
+  const qty = parseInt(quantity, 10);
+  if (!Number.isFinite(qty) || qty < 1) return res.status(400).send('Invalid quantity.');
   try {
     const { rows } = await db.query(
-      `SELECT chemical, quantity, original_chemical FROM chemical_requests WHERE id = $1`,
-      [id]
+      `SELECT cr.chemical, cr.quantity, cr.original_chemical
+       FROM chemical_requests cr
+       JOIN technician_requests tr ON tr.id = cr.request_id
+       WHERE cr.id = $1 AND tr.branch = $2`,
+      [id, location]
     );
-    if (rows.length === 0) return res.send('Chemical not found.');
+    if (rows.length === 0) return res.status(404).send('Chemical not found for this location.');
 
     const row = rows[0];
     if (row.original_chemical === null) {
@@ -253,12 +276,12 @@ router.post('/chem-modify/:location', async (req, res) => {
          SET original_chemical = $1, original_quantity = $2,
              chemical = $3, quantity = $4
          WHERE id = $5`,
-        [row.chemical, row.quantity, chemical, parseInt(quantity), id]
+        [row.chemical, row.quantity, chemical, qty, id]
       );
     } else {
       await db.query(
         `UPDATE chemical_requests SET chemical = $1, quantity = $2 WHERE id = $3`,
-        [chemical, parseInt(quantity), id]
+        [chemical, qty, id]
       );
     }
     res.redirect(`/vendor/${encodeURIComponent(location)}`);

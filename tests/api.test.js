@@ -264,7 +264,7 @@ describe('GET /vendor/print/:requestId', () => {
   });
 
   it('returns 200 with technician name and both original and modified chemical', async () => {
-    const res = await request(app).get(`/vendor/print/${requestId}`);
+    const res = await request(app).get(`/vendor/print/Pestex/${requestId}`);
     expect(res.status).toBe(200);
     expect(res.text).toContain('Print Test Tech');
     expect(res.text).toContain('BIFEN I/T');
@@ -275,7 +275,7 @@ describe('GET /vendor/print/:requestId', () => {
     await db.query(
       `UPDATE chemical_requests SET status = 'approved' WHERE id = $1`, [chemId]
     );
-    const res = await request(app).get(`/vendor/print/${requestId}`);
+    const res = await request(app).get(`/vendor/print/Pestex/${requestId}`);
     expect(res.status).toBe(200);
     expect(res.text).toContain('Cannot print');
   });

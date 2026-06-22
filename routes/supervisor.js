@@ -2,6 +2,15 @@ const express = require('express');
 const db = require('../db');
 const router = express.Router();
 
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function requireSupervisorAuth(req, res, next) {
   if (req.session && req.session.supervisorAuthed) return next();
   req.session.returnTo = req.originalUrl;
@@ -111,16 +120,16 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
   <\/script>
 </head>
 <body>`;
-    html += `<h2>Pending Technician Requests for ${supervisorName}</h2>`;
+    html += `<h2>Pending Technician Requests for ${esc(supervisorName)}</h2>`;
 
     Object.values(grouped).forEach(req => {
       const allReviewed = req.chemicals.every(c => c.status !== 'pending');
 
       html += `
         <div style="border:1px solid #ccc; padding:1rem; margin-bottom:1.5rem;">
-          <strong>Name:</strong> ${req.name} |
-          <strong>Branch:</strong> ${req.branch} |
-          <strong>Pickup Date:</strong> ${req.pickup_date}
+          <strong>Name:</strong> ${esc(req.name)} |
+          <strong>Branch:</strong> ${esc(req.branch)} |
+          <strong>Pickup Date:</strong> ${esc(req.pickup_date)}
           <br><br>
           <table border="1" style="width:100%;">
             <tr><th>Chemical</th><th>Quantity</th><th>Unit</th><th>Status</th><th>Action</th></tr>`;
@@ -128,27 +137,27 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
       req.chemicals.forEach(chem => {
         html += `
           <tr>
-            <td>${chem.chemical}</td>
+            <td>${esc(chem.chemical)}</td>
             <td>${chem.quantity}</td>
-            <td>${chem.unit}</td>
-            <td>${chem.status}</td>
+            <td>${esc(chem.unit)}</td>
+            <td>${esc(chem.status)}</td>
             <td>
-              ${chem.status === 'pending' ? `
-                <form method="POST" action="/supervisor/chem-approve/${supervisorName}" style="display:inline;">
+              ${(chem.status === 'pending' || chem.status === 'modified') ? `
+                <form method="POST" action="/supervisor/chem-approve/${esc(supervisorName)}" style="display:inline;">
                   <input type="hidden" name="id" value="${chem.chem_id}">
                   <button type="submit">Approve</button>
                 </form>
-                <form method="POST" action="/supervisor/chem-reject/${supervisorName}" style="display:inline;">
+                <form method="POST" action="/supervisor/chem-reject/${esc(supervisorName)}" style="display:inline;">
                   <input type="hidden" name="id" value="${chem.chem_id}">
                   <button type="submit">Reject</button>
                 </form>
                 <button type="button" onclick="toggleModify('${chem.chem_id}', ${JSON.stringify(chem.chemical)}, ${chem.quantity})">Modify</button>
-              ` : chem.status.charAt(0).toUpperCase() + chem.status.slice(1)}
+              ` : esc(chem.status.charAt(0).toUpperCase() + chem.status.slice(1))}
             </td>
           </tr>
           <tr id="mod-row-${chem.chem_id}" style="display:none">
             <td colspan="5" style="padding:0.5rem; background:#f9f9f9;">
-              <form method="POST" action="/supervisor/chem-modify/${supervisorName}" style="display:inline;">
+              <form method="POST" action="/supervisor/chem-modify/${esc(supervisorName)}" style="display:inline;">
                 <input type="hidden" name="id" value="${chem.chem_id}">
                 Chemical: <select id="mod-chem-${chem.chem_id}" name="chemical" required></select>
                 &nbsp;Qty: <input id="mod-qty-${chem.chem_id}" type="number" name="quantity" min="1" required style="width:60px;">
@@ -160,7 +169,7 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
       });
 
       html += `</table><br>
-        <form method="POST" action="/supervisor/final-approve/${supervisorName}">
+        <form method="POST" action="/supervisor/final-approve/${esc(supervisorName)}">
           <input type="hidden" name="id" value="${req.request_id}">
           <button type="submit" ${!allReviewed ? 'disabled title="Review all chemicals before finalizing"' : ''}>
             Finalize Form Approval
@@ -215,12 +224,17 @@ router.post('/final-approve/:supervisorName', requireSupervisorAuth, async (req,
 
 router.post('/chem-modify/:supervisorName', requireSupervisorAuth, async (req, res) => {
   const { id, chemical, quantity } = req.body;
+  const qty = parseInt(quantity, 10);
+  if (!Number.isFinite(qty) || qty < 1) return res.status(400).send('Invalid quantity.');
   try {
     const { rows } = await db.query(
-      `SELECT chemical, quantity, original_chemical FROM chemical_requests WHERE id = $1`,
-      [id]
+      `SELECT cr.chemical, cr.quantity, cr.original_chemical
+       FROM chemical_requests cr
+       JOIN technician_requests tr ON tr.id = cr.request_id
+       WHERE cr.id = $1 AND tr.supervisor = $2`,
+      [id, req.params.supervisorName]
     );
-    if (rows.length === 0) return res.send('Chemical not found.');
+    if (rows.length === 0) return res.status(404).send('Chemical not found for this supervisor.');
 
     const row = rows[0];
     if (row.original_chemical === null) {
@@ -229,12 +243,12 @@ router.post('/chem-modify/:supervisorName', requireSupervisorAuth, async (req, r
          SET original_chemical = $1, original_quantity = $2,
              chemical = $3, quantity = $4, status = 'modified'
          WHERE id = $5`,
-        [row.chemical, row.quantity, chemical, parseInt(quantity), id]
+        [row.chemical, row.quantity, chemical, qty, id]
       );
     } else {
       await db.query(
         `UPDATE chemical_requests SET chemical = $1, quantity = $2, status = 'modified' WHERE id = $3`,
-        [chemical, parseInt(quantity), id]
+        [chemical, qty, id]
       );
     }
     res.redirect(`/supervisor/${req.params.supervisorName}`);
