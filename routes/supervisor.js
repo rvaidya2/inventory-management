@@ -212,6 +212,7 @@ router.post('/final-approve/:supervisorName', requireSupervisorAuth, async (req,
     );
 
     if (parseInt(rows[0].pending_count) === 0) {
+      await db.query(`UPDATE chemical_requests SET status = 'approved' WHERE request_id = $1 AND status = 'modified'`, [requestId]);
       await db.query(`UPDATE technician_requests SET status = 'approved' WHERE id = $1`, [requestId]);
       res.redirect(`/supervisor/${req.params.supervisorName}`);
     } else {
