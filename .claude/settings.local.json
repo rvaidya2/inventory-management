@@ -18,7 +18,9 @@
       "Bash(git checkout *)",
       "WebFetch(domain:inventory-management-hiyg.onrender.com)",
       "Skill(deep-research)",
-      "Workflow(deep-research)"
+      "Workflow(deep-research)",
+      "Bash(npx playwright *)",
+      "PowerShell(node --version; npx playwright --version 2>$null)"
     ]
   }
 }
