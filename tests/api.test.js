@@ -13,8 +13,8 @@ beforeAll(async () => {
   // Wait for tables to be created
   await new Promise(resolve => setTimeout(resolve, 500));
   await db.query(
-    `INSERT INTO chemicals (material_code, product_name, epa_registration, replacement_product)
-     VALUES ('MAT001', 'Test Chemical', '999-1', 'Backup Chemical')
+    `INSERT INTO chemicals (material_code, product_name, unit)
+     VALUES ('MAT001', 'Test Chemical', 'CS')
      ON CONFLICT (material_code) DO NOTHING`
   );
   await db.query(
@@ -42,8 +42,7 @@ describe('GET /api/chemicals', () => {
     const item = res.body.find(c => c.material_code === 'MAT001');
     expect(item).toHaveProperty('material_code');
     expect(item).toHaveProperty('product_name');
-    expect(item).toHaveProperty('epa_registration');
-    expect(item).toHaveProperty('replacement_product');
+    expect(item).toHaveProperty('unit');
   });
 });
 
@@ -73,6 +72,19 @@ describe('technician_requests schema', () => {
         AND column_name = 'pickup_location'
     `);
     expect(rows.length).toBe(0);
+  });
+});
+
+describe('chemicals schema', () => {
+  it('has a unit column and no epa_registration/replacement_product columns', async () => {
+    const { rows } = await db.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'chemicals'
+    `);
+    const names = rows.map(r => r.column_name);
+    expect(names).toContain('unit');
+    expect(names).not.toContain('epa_registration');
+    expect(names).not.toContain('replacement_product');
   });
 });
 

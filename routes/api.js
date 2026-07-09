@@ -5,7 +5,7 @@ const router = express.Router();
 router.get('/chemicals', async (req, res) => {
   try {
     const { rows } = await db.query(
-      'SELECT material_code, product_name, epa_registration, replacement_product FROM chemicals ORDER BY product_name'
+      'SELECT material_code, product_name, unit FROM chemicals ORDER BY product_name'
     );
     res.json(rows);
   } catch (err) {

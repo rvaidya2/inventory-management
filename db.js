@@ -30,9 +30,12 @@ async function initDb() {
     id SERIAL PRIMARY KEY,
     material_code TEXT UNIQUE,
     product_name TEXT,
-    epa_registration TEXT,
-    replacement_product TEXT
+    unit TEXT
   )`);
+
+  await pool.query(`ALTER TABLE chemicals ADD COLUMN IF NOT EXISTS unit TEXT`);
+  await pool.query(`ALTER TABLE chemicals DROP COLUMN IF EXISTS epa_registration`);
+  await pool.query(`ALTER TABLE chemicals DROP COLUMN IF EXISTS replacement_product`);
 
   await pool.query(`CREATE TABLE IF NOT EXISTS contacts (
     id SERIAL PRIMARY KEY,
