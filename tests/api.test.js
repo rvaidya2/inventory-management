@@ -429,3 +429,11 @@ describe('POST /vendor/chem-modify/:location', () => {
     expect(rows[0].original_quantity).toBe(3);
   });
 });
+
+describe('GET /vendor/:location chemical modify dropdown', () => {
+  it('labels chemical options with product name and unit', async () => {
+    const res = await request(app).get('/vendor/Pestex');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("opt.textContent = c.product_name + ' (' + c.unit + ')';");
+  });
+});
