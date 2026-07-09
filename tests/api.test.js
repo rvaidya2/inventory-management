@@ -88,6 +88,40 @@ describe('chemicals schema', () => {
   });
 });
 
+describe('chemicals catalog seed data', () => {
+  it('replaces the old generic catalog with the vendor supply list', async () => {
+    const { rows: total } = await db.query(`SELECT COUNT(*) AS count FROM chemicals`);
+    expect(parseInt(total[0].count, 10)).toBe(178); // 177 seeded + 1 test fixture row (MAT001)
+
+    const { rows: xcluder } = await db.query(
+      `SELECT unit FROM chemicals WHERE product_name = $1`,
+      [`XCLUDER FILL FABRIC 4''X10FT 5/CS 162707`]
+    );
+    expect(xcluder).toHaveLength(1);
+    expect(xcluder[0].unit).toBe('CS');
+
+    const { rows: stale } = await db.query(
+      `SELECT 1 FROM chemicals WHERE product_name = 'ADVION Ant Gel'`
+    );
+    expect(stale).toHaveLength(0);
+  });
+
+  it('removes stale rows and reseeds when the old catalog is detected', async () => {
+    const seed = require('../seed');
+    await db.query(
+      `INSERT INTO chemicals (material_code, product_name, unit)
+       VALUES ('OLD1', 'ADVION Ant Gel', 'EA')
+       ON CONFLICT (material_code) DO NOTHING`
+    );
+    await seed(db);
+
+    const { rows } = await db.query(
+      `SELECT 1 FROM chemicals WHERE product_name = 'ADVION Ant Gel'`
+    );
+    expect(rows).toHaveLength(0);
+  });
+});
+
 describe('POST /submit-request', () => {
   let insertedRequestId;
 
