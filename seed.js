@@ -399,11 +399,24 @@ async function seed(pool) {
     await pool.query('DELETE FROM chemicals');
   }
   for (const c of chemicals) {
-    await pool.query(
-      `INSERT INTO chemicals (material_code, product_name, unit)
-       VALUES ($1, $2, $3) ON CONFLICT (material_code) DO NOTHING`,
-      [c.material_code, c.product_name, c.unit]
-    );
+    if (c.material_code === null) {
+      const { rows: existing } = await pool.query(
+        `SELECT 1 FROM chemicals WHERE material_code IS NULL AND product_name = $1 AND unit = $2 LIMIT 1`,
+        [c.product_name, c.unit]
+      );
+      if (existing.length === 0) {
+        await pool.query(
+          `INSERT INTO chemicals (material_code, product_name, unit) VALUES (NULL, $1, $2)`,
+          [c.product_name, c.unit]
+        );
+      }
+    } else {
+      await pool.query(
+        `INSERT INTO chemicals (material_code, product_name, unit)
+         VALUES ($1, $2, $3) ON CONFLICT (material_code) DO NOTHING`,
+        [c.material_code, c.product_name, c.unit]
+      );
+    }
   }
   for (const c of contacts) {
     await pool.query(

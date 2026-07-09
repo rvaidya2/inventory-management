@@ -120,6 +120,26 @@ describe('chemicals catalog seed data', () => {
     );
     expect(rows).toHaveLength(0);
   });
+
+  it('does not duplicate null-material_code rows when seeded twice in a row', async () => {
+    const seed = require('../seed');
+    const { rows: before } = await db.query(`SELECT COUNT(*) AS count FROM chemicals`);
+
+    await seed(db);
+    await seed(db);
+
+    const { rows: after } = await db.query(`SELECT COUNT(*) AS count FROM chemicals`);
+    expect(parseInt(after[0].count, 10)).toBe(parseInt(before[0].count, 10));
+
+    const { rows: dupes } = await db.query(`
+      SELECT product_name, unit, COUNT(*) AS c
+      FROM chemicals
+      WHERE material_code IS NULL
+      GROUP BY product_name, unit
+      HAVING COUNT(*) > 1
+    `);
+    expect(dupes).toHaveLength(0);
+  });
 });
 
 describe('POST /submit-request', () => {
