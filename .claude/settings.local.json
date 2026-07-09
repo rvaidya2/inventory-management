@@ -20,7 +20,29 @@
       "Skill(deep-research)",
       "Workflow(deep-research)",
       "Bash(npx playwright *)",
-      "PowerShell(node --version; npx playwright --version 2>$null)"
+      "PowerShell(node --version; npx playwright --version 2>$null)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 1)",
+      "Bash(npx jest *)",
+      "PowerShell(npm *)",
+      "Skill(run)",
+      "PowerShell($env:PATH.Split\\(';'\\) | Where-Object { $_ -match 'node|npm' } | Select-Object -First 10)",
+      "PowerShell(Get-Command *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\RujutaVaidya\\\\inventory-management\\\\node_modules\\\\.bin\" -File | Where-Object { $_.Name -match \"jest\" })",
+      "Bash(git restore *)",
+      "Bash([ -f \"C:\\\\\\\\Users\\\\\\\\RujutaVaidya\\\\\\\\inventory-management\\\\\\\\.superpowers\\\\\\\\sdd\\\\\\\\task-1-report.md\" ])",
+      "Bash(npm --version)",
+      "PowerShell($env:PATH.Split\\(';'\\) | Where-Object { $_ -match 'node|npm' })",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" abedd06868ce555a88c111e43183840beb587c87 HEAD)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 2)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" f4574e169892c5bf5a50763905304daee1c1df01 HEAD)",
+      "Read(//tmp/**)",
+      "Bash(node -e ' *)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 3)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" 860b53d65ff87f8fa23beaa5f1d7a15a49176511 HEAD)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 4)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" 1d4c6fb886a304be7c255d1825147439c339fe19 HEAD)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 5)",
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" aea3e7485886aa517bfec1099ee16248dc8240a4 HEAD)"
     ]
   }
 }
