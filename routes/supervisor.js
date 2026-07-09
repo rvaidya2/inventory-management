@@ -107,7 +107,7 @@ router.get('/:supervisorName', requireSupervisorAuth, async (req, res) => {
           _chemicals.forEach(c => {
             const opt = document.createElement('option');
             opt.value = c.product_name;
-            opt.textContent = c.product_name;
+            opt.textContent = c.product_name + ' (' + c.unit + ')';
             if (c.product_name === currentChem) opt.selected = true;
             sel.appendChild(opt);
           });

@@ -319,6 +319,17 @@ describe('POST /supervisor/chem-modify/:supervisorName', () => {
   });
 });
 
+describe('GET /supervisor/:name chemical modify dropdown', () => {
+  it('labels chemical options with product name and unit', async () => {
+    const agent = request.agent(app);
+    await agent.post('/supervisor/login').type('form').send({ password: 'testpass' });
+
+    const res = await agent.get('/supervisor/Jane%20Doe');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("opt.textContent = c.product_name + ' (' + c.unit + ')';");
+  });
+});
+
 describe('GET /vendor/print/:requestId', () => {
   let requestId, chemId;
 
