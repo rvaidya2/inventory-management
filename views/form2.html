@@ -6,10 +6,21 @@
   <script>
     let chemicalsData = [];
 
+    function chemOptionsHtml() {
+      return chemicalsData
+        .map((c, i) => `<option value="${c.product_name}" data-idx="${i}">${c.product_name} (${c.unit})</option>`)
+        .join('');
+    }
+
+    function fillUnitForSelect(select) {
+      const row = select.closest('tr');
+      const unitInput = row.querySelector('.unit-display');
+      const opt = select.options[select.selectedIndex];
+      unitInput.value = (opt && opt.dataset.idx !== undefined) ? chemicalsData[opt.dataset.idx].unit : '';
+    }
+
     function buildChemSelect() {
-      return '<select name="chemical[]" required>' +
-        chemicalsData.map(c => `<option value="${c.product_name}">${c.product_name}</option>`).join('') +
-        '</select>';
+      return `<select name="chemical[]" required>${chemOptionsHtml()}</select>`;
     }
 
     function addRow() {
@@ -18,23 +29,26 @@
 
       row.insertCell(0).innerHTML = buildChemSelect();
       row.insertCell(1).innerHTML = '<input type="number" name="quantity[]" min="1" required>';
-      row.insertCell(2).innerHTML = `
-        <select name="unit[]" required>
-          <option value="case">Case</option>
-          <option value="box">Box</option>
-          <option value="individual">Individual</option>
-        </select>`;
+      row.insertCell(2).innerHTML =
+        '<input type="text" name="unit[]" class="unit-display" readonly required style="background:#f0f0f0; cursor:not-allowed;">';
+
+      fillUnitForSelect(row.querySelector('select[name="chemical[]"]'));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('chemicals-table').addEventListener('change', (event) => {
+        if (event.target.matches('select[name="chemical[]"]')) {
+          fillUnitForSelect(event.target);
+        }
+      });
+
       fetch('/api/chemicals')
         .then(r => r.json())
         .then(data => {
           chemicalsData = data;
           const firstSelect = document.getElementById('first-chemical-select');
-          firstSelect.innerHTML = data
-            .map(c => `<option value="${c.product_name}">${c.product_name}</option>`)
-            .join('');
+          firstSelect.innerHTML = chemOptionsHtml();
+          fillUnitForSelect(firstSelect);
         })
         .catch(() => {
           document.getElementById('first-chemical-select').innerHTML =
@@ -61,11 +75,7 @@
         </td>
         <td><input type="number" name="quantity[]" min="1" required></td>
         <td>
-          <select name="unit[]" required>
-            <option value="case">Case</option>
-            <option value="box">Box</option>
-            <option value="individual">Individual</option>
-          </select>
+          <input type="text" name="unit[]" class="unit-display" readonly required style="background:#f0f0f0; cursor:not-allowed;">
         </td>
       </tr>
     </table>

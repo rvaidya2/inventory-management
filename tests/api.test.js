@@ -188,6 +188,19 @@ describe('POST /submit-request', () => {
   });
 });
 
+describe('POST /form2 rendered markup', () => {
+  it('renders a read-only unit field instead of a unit dropdown', async () => {
+    const res = await request(app)
+      .post('/form2')
+      .type('form')
+      .send({ name: 'Test Tech', branch: 'Select', supervisor: 'Jane Doe', pickup_date: '2026-07-01' });
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('class="unit-display"');
+    expect(res.text).not.toContain('<option value="case">');
+  });
+});
+
 describe('GET /vendor/:branch', () => {
   let requestId, chemId;
 
