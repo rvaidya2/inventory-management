@@ -1,13 +1,13 @@
 process.env.NODE_ENV = 'test';
 
 jest.mock('nodemailer');
-const nodemailer = require('nodemailer');
 
 describe('lib/mailer sendMail', () => {
-  let sendMailMock;
+  let sendMailMock, nodemailer;
 
   beforeEach(() => {
     jest.resetModules();
+    nodemailer = require('nodemailer');
     sendMailMock = jest.fn().mockResolvedValue(true);
     nodemailer.createTransport.mockReturnValue({ sendMail: sendMailMock });
   });
