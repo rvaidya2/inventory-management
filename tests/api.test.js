@@ -1,15 +1,22 @@
 process.env.NODE_ENV = 'test';
 process.env.SESSION_SECRET = 'test-secret';
 process.env.SUPERVISOR_PASSWORD = 'testpass';
+process.env.VENDOR_EMAIL = 'vendor@test.com';
 
+jest.mock('../lib/mailer');
 const request = require('supertest');
 
-let app, db;
+let app, db, mailer;
 
 beforeAll(async () => {
   jest.resetModules();
   db = require('../db');
   app = require('../index');
+  // Must be required after resetModules()/require('../index') above, not at file top-level:
+  // jest.resetModules() clears the mock registry, so a top-level require of this automocked
+  // module would resolve to a different mock instance than the one routes/technician.js
+  // (required transitively via '../index' after the reset) actually calls.
+  mailer = require('../lib/mailer');
   // Wait for tables to be created
   await new Promise(resolve => setTimeout(resolve, 500));
   await db.query(
@@ -185,6 +192,7 @@ describe('POST /submit-request', () => {
       await db.query(`DELETE FROM technician_requests WHERE id = $1`, [insertedRequestId]);
       insertedRequestId = null;
     }
+    mailer.sendMail.mockClear();
   });
 
   it('submits a request using branch as location with no pickup_location field', async () => {
@@ -218,6 +226,31 @@ describe('POST /submit-request', () => {
     expect(rows.length).toBe(1);
     expect(rows[0].branch).toBe('Select');
     expect(rows[0]).not.toHaveProperty('pickup_location');
+    insertedRequestId = rows[0].id;
+  });
+
+  it('emails the supervisor with a link to their queue', async () => {
+    await request(app)
+      .post('/form2')
+      .type('form')
+      .send({ name: 'Test Tech', branch: 'Select', supervisor: 'Jane Doe', pickup_date: '2026-07-01' });
+
+    const res = await request(app)
+      .post('/submit-request')
+      .type('form')
+      .send({ chemical: 'Test Chemical', quantity: '2', unit: 'Case' });
+
+    expect(res.status).toBe(200);
+    expect(mailer.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'jane@test.com',
+        subject: 'New chemical request submitted'
+      })
+    );
+
+    const { rows } = await db.query(
+      `SELECT id FROM technician_requests WHERE name = 'Test Tech' ORDER BY id DESC LIMIT 1`
+    );
     insertedRequestId = rows[0].id;
   });
 });
