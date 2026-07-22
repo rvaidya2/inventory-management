@@ -220,30 +220,33 @@ router.post('/final-approve/:supervisorName', requireSupervisorAuth, async (req,
         `SELECT branch, pickup_date FROM technician_requests WHERE id = $1`,
         [requestId]
       );
-      const { rows: chemRows } = await db.query(
-        `SELECT chemical, quantity, unit FROM chemical_requests WHERE request_id = $1 AND status != 'rejected'`,
-        [requestId]
-      );
-      const { branch, pickup_date } = reqRows[0];
-      const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
-      const chemRowsHtml = chemRows.map(c =>
-        `<tr><td>${esc(c.chemical)}</td><td>${esc(c.quantity)}</td><td>${esc(c.unit)}</td></tr>`
-      ).join('');
 
-      await mailer.sendMail({
-        to: process.env.VENDOR_EMAIL,
-        subject: 'Request approved — ready to fulfill',
-        html: `
-          <p>A chemical request has been approved and is ready to fulfill.</p>
-          <p><strong>Branch:</strong> ${esc(branch)} &nbsp;|&nbsp;
-             <strong>Pickup Date:</strong> ${esc(pickup_date)}</p>
-          <table border="1" cellpadding="4" style="border-collapse:collapse;">
-            <tr><th>Chemical</th><th>Quantity</th><th>Unit</th></tr>
-            ${chemRowsHtml}
-          </table>
-          <p><a href="${baseUrl}/vendor/${encodeURIComponent(branch)}">Fulfill this request</a></p>
-        `
-      });
+      if (reqRows.length > 0) {
+        const { rows: chemRows } = await db.query(
+          `SELECT chemical, quantity, unit FROM chemical_requests WHERE request_id = $1 AND status != 'rejected'`,
+          [requestId]
+        );
+        const { branch, pickup_date } = reqRows[0];
+        const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const chemRowsHtml = chemRows.map(c =>
+          `<tr><td>${esc(c.chemical)}</td><td>${esc(c.quantity)}</td><td>${esc(c.unit)}</td></tr>`
+        ).join('');
+
+        await mailer.sendMail({
+          to: process.env.VENDOR_EMAIL,
+          subject: 'Request approved — ready to fulfill',
+          html: `
+            <p>A chemical request has been approved and is ready to fulfill.</p>
+            <p><strong>Branch:</strong> ${esc(branch)} &nbsp;|&nbsp;
+               <strong>Pickup Date:</strong> ${esc(pickup_date)}</p>
+            <table border="1" cellpadding="4" style="border-collapse:collapse;">
+              <tr><th>Chemical</th><th>Quantity</th><th>Unit</th></tr>
+              ${chemRowsHtml}
+            </table>
+            <p><a href="${baseUrl}/vendor/${encodeURIComponent(branch)}">Fulfill this request</a></p>
+          `
+        });
+      }
 
       res.redirect(`/supervisor/${req.params.supervisorName}`);
     } else {

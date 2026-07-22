@@ -246,7 +246,7 @@ router.post('/fulfill/:location', async (req, res) => {
     const { rows: updated } = await db.query(
       `UPDATE chemical_requests cr SET status = 'fulfilled'
        FROM technician_requests tr
-       WHERE cr.id = $1 AND cr.request_id = tr.id AND tr.branch = $2
+       WHERE cr.id = $1 AND cr.request_id = tr.id AND tr.branch = $2 AND cr.status != 'fulfilled'
        RETURNING cr.request_id`,
       [req.body.id, location]
     );
