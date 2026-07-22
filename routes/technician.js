@@ -151,4 +151,8 @@ router.get('/export-submissions.xlsx', async (req, res) => {
   }
 });
 
+router.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(__dirname, '../views/dashboard.html'), { dotfiles: 'allow' });
+});
+
 module.exports = router;
