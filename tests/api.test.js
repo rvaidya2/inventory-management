@@ -553,3 +553,72 @@ describe('GET /vendor/:location chemical modify dropdown', () => {
     expect(res.text).toContain("opt.textContent = c.product_name + ' (' + c.unit + ')';");
   });
 });
+
+describe('POST /vendor/fulfill/:location', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    await db.query(
+      `INSERT INTO technicians (first_name, last_name, branch, supervisor, email)
+       VALUES ('Fulfill', 'TestTech', 'Pestex', 'Jane Doe', 'fulfilltech@test.com')
+       ON CONFLICT (first_name, last_name, branch, supervisor) DO UPDATE SET email = EXCLUDED.email`
+    );
+
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Fulfill TestTech', 'Pestex', 'Jane Doe', '2026-08-05', 'approved') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 2, 'CS', 'approved') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+    mailer.sendMail.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+    await db.query(`DELETE FROM technicians WHERE first_name = 'Fulfill' AND last_name = 'TestTech'`);
+  });
+
+  it('emails the technician once the last chemical on the request is fulfilled', async () => {
+    const res = await request(app)
+      .post('/vendor/fulfill/Pestex')
+      .type('form')
+      .send({ id: chemId });
+
+    expect(res.status).toBe(302);
+
+    const { rows } = await db.query(`SELECT status FROM chemical_requests WHERE id = $1`, [chemId]);
+    expect(rows[0].status).toBe('fulfilled');
+
+    expect(mailer.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'fulfilltech@test.com',
+        subject: 'Your order is ready for pickup'
+      })
+    );
+  });
+
+  it('does not email while other chemicals on the request are still unfulfilled', async () => {
+    const c2 = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Second Chemical', 1, 'EA', 'approved') RETURNING id`,
+      [requestId]
+    );
+    const secondChemId = c2.rows[0].id;
+
+    const res = await request(app)
+      .post('/vendor/fulfill/Pestex')
+      .type('form')
+      .send({ id: chemId });
+
+    expect(res.status).toBe(302);
+    expect(mailer.sendMail).not.toHaveBeenCalled();
+
+    await db.query(`DELETE FROM chemical_requests WHERE id = $1`, [secondChemId]);
+  });
+});
