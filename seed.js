@@ -382,6 +382,13 @@ const technicians = [
   { last_name: 'Walkos', first_name: 'Brian', branch: 'Vermin Control', supervisor: 'Mary Swaney' },
 ];
 
+// Real technician email addresses, keyed by "First Last|Branch|Supervisor".
+// Any technician not listed here seeds with email = NULL (see emails-to-fill.csv for the
+// pending backfill). Re-running seed() always reconciles technicians.email to match this map.
+const technicianEmails = {
+  // 'Benjamin Aguilar|Select - LI Commercial & Residential|Thomas Roach': 'baguilar@example.com',
+};
+
 async function seed(pool) {
   await pool.query(`CREATE TABLE IF NOT EXISTS technicians (
     id SERIAL PRIMARY KEY,
@@ -389,8 +396,11 @@ async function seed(pool) {
     last_name  TEXT NOT NULL,
     branch     TEXT NOT NULL,
     supervisor TEXT NOT NULL,
+    email      TEXT,
     UNIQUE(first_name, last_name, branch, supervisor)
   )`);
+
+  await pool.query(`ALTER TABLE technicians ADD COLUMN IF NOT EXISTS email TEXT`);
 
   const { rows: staleCheck } = await pool.query(
     `SELECT 1 FROM chemicals WHERE product_name = 'ADVION Ant Gel' LIMIT 1`
@@ -427,11 +437,14 @@ async function seed(pool) {
     );
   }
   for (const t of technicians) {
+    const key = `${t.first_name} ${t.last_name}|${t.branch}|${t.supervisor}`;
+    const email = technicianEmails[key] || null;
     await pool.query(
-      `INSERT INTO technicians (first_name, last_name, branch, supervisor)
-       VALUES ($1, $2, $3, $4)
-       ON CONFLICT (first_name, last_name, branch, supervisor) DO NOTHING`,
-      [t.first_name, t.last_name, t.branch, t.supervisor]
+      `INSERT INTO technicians (first_name, last_name, branch, supervisor, email)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (first_name, last_name, branch, supervisor)
+       DO UPDATE SET email = EXCLUDED.email`,
+      [t.first_name, t.last_name, t.branch, t.supervisor, email]
     );
   }
   console.log(`Seeded ${chemicals.length} chemicals, ${contacts.length} contacts, ${technicians.length} technicians.`);

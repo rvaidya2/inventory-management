@@ -142,6 +142,40 @@ describe('chemicals catalog seed data', () => {
   });
 });
 
+describe('technicians schema and email seeding', () => {
+  it('has a nullable email column', async () => {
+    const { rows } = await db.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'technicians' AND column_name = 'email'
+    `);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('seeds technicians with a null email when not listed in technicianEmails', async () => {
+    const { rows } = await db.query(
+      `SELECT email FROM technicians
+       WHERE first_name = 'Benjamin' AND last_name = 'Aguilar' AND branch = 'Select - LI Commercial & Residential'`
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].email).toBeNull();
+  });
+
+  it('reconciles a manually-changed email back to the seed-defined value on reseed', async () => {
+    await db.query(
+      `UPDATE technicians SET email = 'stale@example.com'
+       WHERE first_name = 'Benjamin' AND last_name = 'Aguilar' AND branch = 'Select - LI Commercial & Residential'`
+    );
+    const seed = require('../seed');
+    await seed(db);
+
+    const { rows } = await db.query(
+      `SELECT email FROM technicians
+       WHERE first_name = 'Benjamin' AND last_name = 'Aguilar' AND branch = 'Select - LI Commercial & Residential'`
+    );
+    expect(rows[0].email).toBeNull();
+  });
+});
+
 describe('POST /submit-request', () => {
   let insertedRequestId;
 
