@@ -386,6 +386,55 @@ describe('POST /supervisor/chem-modify/:supervisorName', () => {
   });
 });
 
+describe('POST /supervisor/final-approve/:supervisorName', () => {
+  let agent;
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    agent = request.agent(app);
+    await agent.post('/supervisor/login').type('form').send({ password: 'testpass' });
+
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Final Approve Tech', 'Pestex', 'Jane Doe', '2026-08-01', 'pending') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 4, 'CS', 'approved') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+    mailer.sendMail.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('emails the vendor with a link to the branch fulfillment page', async () => {
+    const res = await agent
+      .post('/supervisor/final-approve/Jane%20Doe')
+      .type('form')
+      .send({ id: requestId });
+
+    expect(res.status).toBe(302);
+
+    const { rows } = await db.query(`SELECT status FROM technician_requests WHERE id = $1`, [requestId]);
+    expect(rows[0].status).toBe('approved');
+
+    expect(mailer.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'vendor@test.com',
+        subject: 'Request approved — ready to fulfill'
+      })
+    );
+    const lastCall = mailer.sendMail.mock.calls[mailer.sendMail.mock.calls.length - 1][0];
+    expect(lastCall.html).toContain('Pestex');
+  });
+});
+
 describe('GET /supervisor/:name chemical modify dropdown', () => {
   it('labels chemical options with product name and unit', async () => {
     const agent = request.agent(app);
