@@ -12,6 +12,7 @@
   "description": "",
   "dependencies": {
     "dotenv": "^16.0.0",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "express-session": "^1.17.3",
     "pg": "^8.11.0"
