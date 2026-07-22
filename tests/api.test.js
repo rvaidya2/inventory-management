@@ -495,3 +495,48 @@ describe('GET /export-submissions.xlsx', () => {
     expect(found).toBe(true);
   });
 });
+
+describe('GET /api/dashboard-data', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Dashboard Test Tech', 'Dashboard Test Branch', 'Jane Doe', '2026-09-01', 'pending') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Dashboard Test Chemical', 7, 'CS', 'pending') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('returns aggregated data including the known fixture rows', async () => {
+    const res = await request(app).get('/api/dashboard-data');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('chemicalQuantities');
+    expect(res.body).toHaveProperty('branchCounts');
+    expect(res.body).toHaveProperty('requestsOverTime');
+    expect(res.body).toHaveProperty('technicianQuantities');
+
+    const chem = res.body.chemicalQuantities.find(c => c.chemical === 'Dashboard Test Chemical');
+    expect(chem).toEqual({ chemical: 'Dashboard Test Chemical', totalQuantity: 7 });
+
+    const branch = res.body.branchCounts.find(b => b.branch === 'Dashboard Test Branch');
+    expect(branch).toEqual({ branch: 'Dashboard Test Branch', requestCount: 1 });
+
+    const day = res.body.requestsOverTime.find(d => d.pickupDate === '2026-09-01');
+    expect(day).toEqual({ pickupDate: '2026-09-01', requestCount: 1 });
+
+    const tech = res.body.technicianQuantities.find(t => t.name === 'Dashboard Test Tech');
+    expect(tech).toEqual({ name: 'Dashboard Test Tech', totalQuantity: 7 });
+  });
+});

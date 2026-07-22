@@ -35,4 +35,59 @@ router.get('/technicians', async (req, res) => {
   }
 });
 
+router.get('/dashboard-data', async (req, res) => {
+  try {
+    const [chemicalRes, branchRes, timeRes, techRes] = await Promise.all([
+      db.query(
+        `SELECT chemical, SUM(quantity) AS total_quantity
+         FROM chemical_requests
+         WHERE chemical IS NOT NULL
+         GROUP BY chemical
+         ORDER BY total_quantity DESC`
+      ),
+      db.query(
+        `SELECT branch, COUNT(*) AS request_count
+         FROM technician_requests
+         GROUP BY branch
+         ORDER BY request_count DESC`
+      ),
+      db.query(
+        `SELECT pickup_date, COUNT(*) AS request_count
+         FROM technician_requests
+         GROUP BY pickup_date
+         ORDER BY pickup_date ASC`
+      ),
+      db.query(
+        `SELECT tr.name, SUM(cr.quantity) AS total_quantity
+         FROM technician_requests tr
+         JOIN chemical_requests cr ON cr.request_id = tr.id
+         WHERE cr.quantity IS NOT NULL
+         GROUP BY tr.name
+         ORDER BY total_quantity DESC`
+      )
+    ]);
+
+    res.json({
+      chemicalQuantities: chemicalRes.rows.map(r => ({
+        chemical: r.chemical,
+        totalQuantity: parseInt(r.total_quantity, 10)
+      })),
+      branchCounts: branchRes.rows.map(r => ({
+        branch: r.branch,
+        requestCount: parseInt(r.request_count, 10)
+      })),
+      requestsOverTime: timeRes.rows.map(r => ({
+        pickupDate: r.pickup_date,
+        requestCount: parseInt(r.request_count, 10)
+      })),
+      technicianQuantities: techRes.rows.map(r => ({
+        name: r.name,
+        totalQuantity: parseInt(r.total_quantity, 10)
+      }))
+    });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch dashboard data.' });
+  }
+});
+
 module.exports = router;
