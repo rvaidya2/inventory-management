@@ -1,15 +1,22 @@
 process.env.NODE_ENV = 'test';
 process.env.SESSION_SECRET = 'test-secret';
 process.env.SUPERVISOR_PASSWORD = 'testpass';
+process.env.VENDOR_EMAIL = 'vendor@test.com';
 
+jest.mock('../lib/mailer');
 const request = require('supertest');
 
-let app, db;
+let app, db, mailer;
 
 beforeAll(async () => {
   jest.resetModules();
   db = require('../db');
   app = require('../index');
+  // Must be required after resetModules()/require('../index') above, not at file top-level:
+  // jest.resetModules() clears the mock registry, so a top-level require of this automocked
+  // module would resolve to a different mock instance than the one routes/technician.js
+  // (required transitively via '../index' after the reset) actually calls.
+  mailer = require('../lib/mailer');
   // Wait for tables to be created
   await new Promise(resolve => setTimeout(resolve, 500));
   await db.query(
@@ -142,6 +149,40 @@ describe('chemicals catalog seed data', () => {
   });
 });
 
+describe('technicians schema and email seeding', () => {
+  it('has a nullable email column', async () => {
+    const { rows } = await db.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'technicians' AND column_name = 'email'
+    `);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('seeds technicians with a null email when not listed in technicianEmails', async () => {
+    const { rows } = await db.query(
+      `SELECT email FROM technicians
+       WHERE first_name = 'Benjamin' AND last_name = 'Aguilar' AND branch = 'Select - LI Commercial & Residential'`
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0].email).toBeNull();
+  });
+
+  it('reconciles a manually-changed email back to the seed-defined value on reseed', async () => {
+    await db.query(
+      `UPDATE technicians SET email = 'stale@example.com'
+       WHERE first_name = 'Benjamin' AND last_name = 'Aguilar' AND branch = 'Select - LI Commercial & Residential'`
+    );
+    const seed = require('../seed');
+    await seed(db);
+
+    const { rows } = await db.query(
+      `SELECT email FROM technicians
+       WHERE first_name = 'Benjamin' AND last_name = 'Aguilar' AND branch = 'Select - LI Commercial & Residential'`
+    );
+    expect(rows[0].email).toBeNull();
+  });
+});
+
 describe('POST /submit-request', () => {
   let insertedRequestId;
 
@@ -151,6 +192,7 @@ describe('POST /submit-request', () => {
       await db.query(`DELETE FROM technician_requests WHERE id = $1`, [insertedRequestId]);
       insertedRequestId = null;
     }
+    mailer.sendMail.mockClear();
   });
 
   it('submits a request using branch as location with no pickup_location field', async () => {
@@ -184,6 +226,31 @@ describe('POST /submit-request', () => {
     expect(rows.length).toBe(1);
     expect(rows[0].branch).toBe('Select');
     expect(rows[0]).not.toHaveProperty('pickup_location');
+    insertedRequestId = rows[0].id;
+  });
+
+  it('emails the supervisor with a link to their queue', async () => {
+    await request(app)
+      .post('/form2')
+      .type('form')
+      .send({ name: 'Test Tech', branch: 'Select', supervisor: 'Jane Doe', pickup_date: '2026-07-01' });
+
+    const res = await request(app)
+      .post('/submit-request')
+      .type('form')
+      .send({ chemical: 'Test Chemical', quantity: '2', unit: 'Case' });
+
+    expect(res.status).toBe(200);
+    expect(mailer.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'jane@test.com',
+        subject: 'New chemical request submitted'
+      })
+    );
+
+    const { rows } = await db.query(
+      `SELECT id FROM technician_requests WHERE name = 'Test Tech' ORDER BY id DESC LIMIT 1`
+    );
     insertedRequestId = rows[0].id;
   });
 });
@@ -319,6 +386,55 @@ describe('POST /supervisor/chem-modify/:supervisorName', () => {
   });
 });
 
+describe('POST /supervisor/final-approve/:supervisorName', () => {
+  let agent;
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    agent = request.agent(app);
+    await agent.post('/supervisor/login').type('form').send({ password: 'testpass' });
+
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Final Approve Tech', 'Pestex', 'Jane Doe', '2026-08-01', 'pending') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 4, 'CS', 'approved') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+    mailer.sendMail.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('emails the vendor with a link to the branch fulfillment page', async () => {
+    const res = await agent
+      .post('/supervisor/final-approve/Jane%20Doe')
+      .type('form')
+      .send({ id: requestId });
+
+    expect(res.status).toBe(302);
+
+    const { rows } = await db.query(`SELECT status FROM technician_requests WHERE id = $1`, [requestId]);
+    expect(rows[0].status).toBe('approved');
+
+    expect(mailer.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'vendor@test.com',
+        subject: 'Request approved — ready to fulfill'
+      })
+    );
+    const lastCall = mailer.sendMail.mock.calls[mailer.sendMail.mock.calls.length - 1][0];
+    expect(lastCall.html).toContain('Pestex');
+  });
+});
+
 describe('GET /supervisor/:name chemical modify dropdown', () => {
   it('labels chemical options with product name and unit', async () => {
     const agent = request.agent(app);
@@ -435,5 +551,74 @@ describe('GET /vendor/:location chemical modify dropdown', () => {
     const res = await request(app).get('/vendor/Pestex');
     expect(res.status).toBe(200);
     expect(res.text).toContain("opt.textContent = c.product_name + ' (' + c.unit + ')';");
+  });
+});
+
+describe('POST /vendor/fulfill/:location', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    await db.query(
+      `INSERT INTO technicians (first_name, last_name, branch, supervisor, email)
+       VALUES ('Fulfill', 'TestTech', 'Pestex', 'Jane Doe', 'fulfilltech@test.com')
+       ON CONFLICT (first_name, last_name, branch, supervisor) DO UPDATE SET email = EXCLUDED.email`
+    );
+
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Fulfill TestTech', 'Pestex', 'Jane Doe', '2026-08-05', 'approved') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 2, 'CS', 'approved') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+    mailer.sendMail.mockClear();
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+    await db.query(`DELETE FROM technicians WHERE first_name = 'Fulfill' AND last_name = 'TestTech'`);
+  });
+
+  it('emails the technician once the last chemical on the request is fulfilled', async () => {
+    const res = await request(app)
+      .post('/vendor/fulfill/Pestex')
+      .type('form')
+      .send({ id: chemId });
+
+    expect(res.status).toBe(302);
+
+    const { rows } = await db.query(`SELECT status FROM chemical_requests WHERE id = $1`, [chemId]);
+    expect(rows[0].status).toBe('fulfilled');
+
+    expect(mailer.sendMail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        to: 'fulfilltech@test.com',
+        subject: 'Your order is ready for pickup'
+      })
+    );
+  });
+
+  it('does not email while other chemicals on the request are still unfulfilled', async () => {
+    const c2 = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Second Chemical', 1, 'EA', 'approved') RETURNING id`,
+      [requestId]
+    );
+    const secondChemId = c2.rows[0].id;
+
+    const res = await request(app)
+      .post('/vendor/fulfill/Pestex')
+      .type('form')
+      .send({ id: chemId });
+
+    expect(res.status).toBe(302);
+    expect(mailer.sendMail).not.toHaveBeenCalled();
+
+    await db.query(`DELETE FROM chemical_requests WHERE id = $1`, [secondChemId]);
   });
 });

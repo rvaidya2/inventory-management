@@ -1,5 +1,6 @@
 const express = require('express');
 const db = require('../db');
+const mailer = require('../lib/mailer');
 const router = express.Router();
 
 function esc(str) {
@@ -242,12 +243,60 @@ router.get('/:location', async (req, res) => {
 router.post('/fulfill/:location', async (req, res) => {
   const location = decodeURIComponent(req.params.location);
   try {
-    await db.query(
+    const { rows: updated } = await db.query(
       `UPDATE chemical_requests cr SET status = 'fulfilled'
        FROM technician_requests tr
-       WHERE cr.id = $1 AND cr.request_id = tr.id AND tr.branch = $2`,
+       WHERE cr.id = $1 AND cr.request_id = tr.id AND tr.branch = $2 AND cr.status != 'fulfilled'
+       RETURNING cr.request_id`,
       [req.body.id, location]
     );
+
+    if (updated.length > 0) {
+      const requestId = updated[0].request_id;
+      const { rows: remaining } = await db.query(
+        `SELECT COUNT(*) AS count FROM chemical_requests WHERE request_id = $1 AND status != 'fulfilled'`,
+        [requestId]
+      );
+
+      if (parseInt(remaining[0].count, 10) === 0) {
+        const { rows: reqRows } = await db.query(
+          `SELECT name, branch, pickup_date, supervisor FROM technician_requests WHERE id = $1`,
+          [requestId]
+        );
+        const { rows: chemRows } = await db.query(
+          `SELECT chemical, quantity, unit FROM chemical_requests WHERE request_id = $1`,
+          [requestId]
+        );
+        const { name, branch, pickup_date, supervisor } = reqRows[0];
+
+        const { rows: techRows } = await db.query(
+          `SELECT email FROM technicians
+           WHERE first_name || ' ' || last_name = $1 AND branch = $2 AND supervisor = $3`,
+          [name, branch, supervisor]
+        );
+        const technicianEmail = techRows[0] && techRows[0].email;
+        const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+        const chemRowsHtml = chemRows.map(c =>
+          `<tr><td>${esc(c.chemical)}</td><td>${esc(c.quantity)}</td><td>${esc(c.unit)}</td></tr>`
+        ).join('');
+
+        await mailer.sendMail({
+          to: technicianEmail,
+          subject: 'Your order is ready for pickup',
+          html: `
+            <p>Your chemical order is ready for pickup.</p>
+            <p><strong>Branch:</strong> ${esc(branch)} &nbsp;|&nbsp;
+               <strong>Pickup Date:</strong> ${esc(pickup_date)}</p>
+            <table border="1" cellpadding="4" style="border-collapse:collapse;">
+              <tr><th>Chemical</th><th>Quantity</th><th>Unit</th></tr>
+              ${chemRowsHtml}
+            </table>
+            <p><a href="${baseUrl}/submissions">View submissions</a></p>
+          `
+        });
+      }
+    }
+
     res.redirect(`/vendor/${encodeURIComponent(location)}`);
   } catch (err) {
     res.send('Error fulfilling chemical.');

@@ -1,7 +1,17 @@
 const express = require('express');
 const path = require('path');
 const db = require('../db');
+const mailer = require('../lib/mailer');
 const router = express.Router();
+
+function esc(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 let technicianData = null;
 
@@ -40,6 +50,31 @@ router.post('/submit-request', async (req, res) => {
         [requestId, chemicals[i], quantities[i], units[i]]
       );
     }
+
+    const { rows: supervisorRows } = await db.query(
+      `SELECT email FROM contacts WHERE first_name || ' ' || last_name = $1`,
+      [technicianData.supervisor]
+    );
+    const supervisorEmail = supervisorRows[0] && supervisorRows[0].email;
+    const baseUrl = process.env.APP_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const chemRowsHtml = chemicals.map((chem, i) =>
+      `<tr><td>${esc(chem)}</td><td>${esc(quantities[i])}</td><td>${esc(units[i])}</td></tr>`
+    ).join('');
+
+    await mailer.sendMail({
+      to: supervisorEmail,
+      subject: 'New chemical request submitted',
+      html: `
+        <p><strong>${esc(technicianData.name)}</strong> submitted a chemical request.</p>
+        <p><strong>Branch:</strong> ${esc(technicianData.branch)} &nbsp;|&nbsp;
+           <strong>Pickup Date:</strong> ${esc(technicianData.pickup_date)}</p>
+        <table border="1" cellpadding="4" style="border-collapse:collapse;">
+          <tr><th>Chemical</th><th>Quantity</th><th>Unit</th></tr>
+          ${chemRowsHtml}
+        </table>
+        <p><a href="${baseUrl}/supervisor/${encodeURIComponent(technicianData.supervisor)}">Review this request</a></p>
+      `
+    });
 
     res.sendFile(path.join(__dirname, '../views/success.html'));
   } catch (err) {
