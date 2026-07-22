@@ -540,3 +540,12 @@ describe('GET /api/dashboard-data', () => {
     expect(tech).toEqual({ name: 'Dashboard Test Tech', totalQuantity: 7 });
   });
 });
+
+describe('GET /submissions links', () => {
+  it('links to the Excel export and the dashboard', async () => {
+    const res = await request(app).get('/submissions');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('href="/export-submissions.xlsx"');
+    expect(res.text).toContain('href="/dashboard"');
+  });
+});

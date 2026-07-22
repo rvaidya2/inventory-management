@@ -83,7 +83,9 @@ router.get('/submissions', async (req, res) => {
     });
 
     let html = `<html><head><link rel="stylesheet" href="/styles.css"><title>All Submissions</title></head><body>
-      <h2>Submitted Requests with Chemicals</h2>`;
+      <h2>Submitted Requests with Chemicals</h2>
+      <a class="button" href="/export-submissions.xlsx">Export to Excel</a>
+      <a class="button" href="/dashboard">View Dashboard</a>`;
 
     Object.values(grouped).forEach(req => {
       html += `
