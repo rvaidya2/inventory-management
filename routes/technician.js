@@ -154,6 +154,9 @@ router.get('/export-submissions.xlsx', async (req, res) => {
 });
 
 router.get('/dashboard', (req, res) => {
+  // dotfiles: 'allow' works around dev checkouts whose absolute path contains a dot segment
+  // (e.g. a .claude/worktrees/... directory), which Express's default dotfile handling 404s on.
+  // The path here is a fixed literal, not user input, so this carries no traversal risk.
   res.sendFile(path.join(__dirname, '../views/dashboard.html'), { dotfiles: 'allow' });
 });
 

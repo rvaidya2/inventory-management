@@ -41,7 +41,7 @@ router.get('/dashboard-data', async (req, res) => {
       db.query(
         `SELECT chemical, SUM(quantity) AS total_quantity
          FROM chemical_requests
-         WHERE chemical IS NOT NULL
+         WHERE chemical IS NOT NULL AND quantity IS NOT NULL
          GROUP BY chemical
          ORDER BY total_quantity DESC`
       ),
