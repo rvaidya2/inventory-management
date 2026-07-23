@@ -42,7 +42,16 @@
       "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 4)",
       "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" 1d4c6fb886a304be7c255d1825147439c339fe19 HEAD)",
       "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\task-brief\" \"docs/superpowers/plans/2026-07-09-chemical-catalog-units-plan.md\" 5)",
-      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" aea3e7485886aa517bfec1099ee16248dc8240a4 HEAD)"
+      "Bash(bash \"C:\\\\Users\\\\RujutaVaidya\\\\.claude\\\\plugins\\\\cache\\\\claude-plugins-official\\\\superpowers\\\\6.1.1\\\\skills\\\\subagent-driven-development\\\\scripts\\\\review-package\" aea3e7485886aa517bfec1099ee16248dc8240a4 HEAD)",
+      "Bash(git check-ignore *)",
+      "Bash(perl -v)",
+      "Bash(npm -v)",
+      "Bash(git worktree *)",
+      "Bash(git branch *)",
+      "Bash(gh auth *)",
+      "PowerShell(git fetch *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" \"https://github.com/rvaidya2/inventory-management\")",
+      "Bash(git reset *)"
     ]
   }
 }
