@@ -2,6 +2,7 @@ const express = require('express');
 const path = require('path');
 const db = require('../db');
 const mailer = require('../lib/mailer');
+const ExcelJS = require('exceljs');
 const router = express.Router();
 
 function esc(str) {
@@ -117,7 +118,9 @@ router.get('/submissions', async (req, res) => {
     });
 
     let html = `<html><head><link rel="stylesheet" href="/styles.css"><title>All Submissions</title></head><body>
-      <h2>Submitted Requests with Chemicals</h2>`;
+      <h2>Submitted Requests with Chemicals</h2>
+      <a class="button" href="/export-submissions.xlsx">Export to Excel</a>
+      <a class="button" href="/dashboard">View Dashboard</a>`;
 
     Object.values(grouped).forEach(req => {
       html += `
@@ -143,6 +146,53 @@ router.get('/submissions', async (req, res) => {
   } catch (err) {
     res.send('Error retrieving data.');
   }
+});
+
+router.get('/export-submissions.xlsx', async (req, res) => {
+  try {
+    const { rows } = await db.query(`
+      SELECT
+        tr.id AS request_id,
+        tr.name,
+        tr.branch,
+        tr.supervisor,
+        tr.pickup_date,
+        tr.status,
+        cr.chemical,
+        cr.quantity,
+        cr.unit
+      FROM technician_requests tr
+      LEFT JOIN chemical_requests cr ON tr.id = cr.request_id
+      ORDER BY tr.id DESC
+    `);
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Submissions');
+    sheet.addRow([
+      'Request ID', 'Technician', 'Branch', 'Supervisor', 'Pickup Date', 'Status', 'Chemical', 'Quantity', 'Unit'
+    ]);
+    rows.forEach(row => {
+      sheet.addRow([
+        row.request_id, row.name, row.branch, row.supervisor, row.pickup_date, row.status,
+        row.chemical, row.quantity, row.unit
+      ]);
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename="submissions.xlsx"');
+    await workbook.xlsx.write(res);
+    res.end();
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error generating export.');
+  }
+});
+
+router.get('/dashboard', (req, res) => {
+  // dotfiles: 'allow' works around dev checkouts whose absolute path contains a dot segment
+  // (e.g. a .claude/worktrees/... directory), which Express's default dotfile handling 404s on.
+  // The path here is a fixed literal, not user input, so this carries no traversal risk.
+  res.sendFile(path.join(__dirname, '../views/dashboard.html'), { dotfiles: 'allow' });
 });
 
 module.exports = router;

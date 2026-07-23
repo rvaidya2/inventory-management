@@ -5,6 +5,7 @@ process.env.VENDOR_EMAIL = 'vendor@test.com';
 
 jest.mock('../lib/mailer');
 const request = require('supertest');
+const ExcelJS = require('exceljs');
 
 let app, db, mailer;
 
@@ -620,5 +621,116 @@ describe('POST /vendor/fulfill/:location', () => {
     expect(mailer.sendMail).not.toHaveBeenCalled();
 
     await db.query(`DELETE FROM chemical_requests WHERE id = $1`, [secondChemId]);
+  });
+});
+
+describe('GET /export-submissions.xlsx', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Export Test Tech', 'Pestex', 'Jane Doe', '2026-08-10', 'pending') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Test Chemical', 5, 'CS', 'pending') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('returns a valid xlsx workbook containing the submission data', async () => {
+    const res = await request(app).get('/export-submissions.xlsx');
+
+    expect(res.status).toBe(200);
+    expect(res.headers['content-type']).toBe(
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    );
+    expect(res.headers['content-disposition']).toContain('submissions.xlsx');
+
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(res.body);
+    const sheet = workbook.getWorksheet('Submissions');
+    expect(sheet).toBeDefined();
+
+    const headerRow = sheet.getRow(1).values.filter(v => v !== undefined && v !== null);
+    expect(headerRow).toEqual([
+      'Request ID', 'Technician', 'Branch', 'Supervisor', 'Pickup Date', 'Status', 'Chemical', 'Quantity', 'Unit'
+    ]);
+
+    let found = false;
+    for (let i = 2; i <= sheet.rowCount; i++) {
+      const row = sheet.getRow(i);
+      if (row.getCell(1).value === requestId) {
+        expect(row.getCell(2).value).toBe('Export Test Tech');
+        expect(row.getCell(3).value).toBe('Pestex');
+        expect(row.getCell(7).value).toBe('Test Chemical');
+        expect(row.getCell(8).value).toBe(5);
+        expect(row.getCell(9).value).toBe('CS');
+        found = true;
+      }
+    }
+    expect(found).toBe(true);
+  });
+});
+
+describe('GET /api/dashboard-data', () => {
+  let requestId, chemId;
+
+  beforeEach(async () => {
+    const r = await db.query(
+      `INSERT INTO technician_requests (name, branch, supervisor, pickup_date, status)
+       VALUES ('Dashboard Test Tech', 'Dashboard Test Branch', 'Jane Doe', '2026-09-01', 'pending') RETURNING id`
+    );
+    requestId = r.rows[0].id;
+    const c = await db.query(
+      `INSERT INTO chemical_requests (request_id, chemical, quantity, unit, status)
+       VALUES ($1, 'Dashboard Test Chemical', 7, 'CS', 'pending') RETURNING id`,
+      [requestId]
+    );
+    chemId = c.rows[0].id;
+  });
+
+  afterEach(async () => {
+    await db.query(`DELETE FROM chemical_requests WHERE request_id = $1`, [requestId]);
+    await db.query(`DELETE FROM technician_requests WHERE id = $1`, [requestId]);
+  });
+
+  it('returns aggregated data including the known fixture rows', async () => {
+    const res = await request(app).get('/api/dashboard-data');
+
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('chemicalQuantities');
+    expect(res.body).toHaveProperty('branchCounts');
+    expect(res.body).toHaveProperty('requestsOverTime');
+    expect(res.body).toHaveProperty('technicianQuantities');
+
+    const chem = res.body.chemicalQuantities.find(c => c.chemical === 'Dashboard Test Chemical');
+    expect(chem).toEqual({ chemical: 'Dashboard Test Chemical', totalQuantity: 7 });
+
+    const branch = res.body.branchCounts.find(b => b.branch === 'Dashboard Test Branch');
+    expect(branch).toEqual({ branch: 'Dashboard Test Branch', requestCount: 1 });
+
+    const day = res.body.requestsOverTime.find(d => d.pickupDate === '2026-09-01');
+    expect(day).toEqual({ pickupDate: '2026-09-01', requestCount: 1 });
+
+    const tech = res.body.technicianQuantities.find(t => t.name === 'Dashboard Test Tech');
+    expect(tech).toEqual({ name: 'Dashboard Test Tech', totalQuantity: 7 });
+  });
+});
+
+describe('GET /submissions links', () => {
+  it('links to the Excel export and the dashboard', async () => {
+    const res = await request(app).get('/submissions');
+    expect(res.status).toBe(200);
+    expect(res.text).toContain('href="/export-submissions.xlsx"');
+    expect(res.text).toContain('href="/dashboard"');
   });
 });

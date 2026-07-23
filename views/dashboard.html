@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Submissions Dashboard</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+</head>
+<body>
+  <h2>Submissions Dashboard</h2>
+
+  <canvas id="chemical-chart" width="800" height="400"></canvas>
+  <canvas id="branch-chart" width="800" height="400"></canvas>
+  <canvas id="time-chart" width="800" height="400"></canvas>
+  <canvas id="technician-chart" width="800" height="400"></canvas>
+
+  <script>
+    fetch('/api/dashboard-data')
+      .then(r => r.json())
+      .then(data => {
+        new Chart(document.getElementById('chemical-chart'), {
+          type: 'bar',
+          data: {
+            labels: data.chemicalQuantities.map(d => d.chemical),
+            datasets: [{ label: 'Total Quantity Requested', data: data.chemicalQuantities.map(d => d.totalQuantity) }]
+          },
+          options: { plugins: { title: { display: true, text: 'Total Quantity Requested per Chemical' } } }
+        });
+
+        new Chart(document.getElementById('branch-chart'), {
+          type: 'bar',
+          data: {
+            labels: data.branchCounts.map(d => d.branch),
+            datasets: [{ label: 'Requests', data: data.branchCounts.map(d => d.requestCount) }]
+          },
+          options: { plugins: { title: { display: true, text: 'Requests per Branch' } } }
+        });
+
+        new Chart(document.getElementById('time-chart'), {
+          type: 'bar',
+          data: {
+            labels: data.requestsOverTime.map(d => d.pickupDate),
+            datasets: [{ label: 'Requests', data: data.requestsOverTime.map(d => d.requestCount) }]
+          },
+          options: { plugins: { title: { display: true, text: 'Requests Over Time' } } }
+        });
+
+        new Chart(document.getElementById('technician-chart'), {
+          type: 'bar',
+          data: {
+            labels: data.technicianQuantities.map(d => d.name),
+            datasets: [{ label: 'Total Quantity Ordered', data: data.technicianQuantities.map(d => d.totalQuantity) }]
+          },
+          options: { plugins: { title: { display: true, text: 'Total Quantity Ordered per Technician' } } }
+        });
+      })
+      .catch(() => {
+        document.body.innerHTML += '<p>Error loading dashboard data.</p>';
+      });
+  </script>
+</body>
+</html>
